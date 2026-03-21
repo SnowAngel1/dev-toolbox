@@ -1,0 +1,241 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 245 58% 51%;
+    --primary-foreground: 210 40% 98%;
+    --primary-glow: 245 80% 67%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 222.2 84% 4.9%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 245 58% 51%;
+    --radius: 0.625rem;
+    --sidebar: 220 20% 97%;
+    --sidebar-foreground: 222.2 84% 4.9%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-active: 245 58% 51%;
+    --editor: 220 14% 96%;
+    --editor-foreground: 222.2 84% 4.9%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(245 58% 51%), hsl(245 80% 67%));
+    --gradient-surface: linear-gradient(180deg, hsl(220 20% 97%), hsl(220 14% 93%));
+    --shadow-glow: 0 0 30px hsl(245 80% 67% / 0.15);
+    --shadow-elegant: 0 8px 24px -8px hsl(245 58% 51% / 0.12);
+    --shadow-inner-glow: inset 0 1px 0 0 hsl(0 0% 100% / 0.05);
+  }
+
+  .dark {
+    --background: 228 18% 7%;
+    --foreground: 220 14% 90%;
+    --card: 226 18% 10%;
+    --card-foreground: 220 14% 90%;
+    --popover: 226 18% 10%;
+    --popover-foreground: 220 14% 90%;
+    --primary: 245 72% 65%;
+    --primary-foreground: 228 18% 7%;
+    --primary-glow: 245 90% 75%;
+    --secondary: 224 14% 16%;
+    --secondary-foreground: 220 14% 90%;
+    --muted: 224 14% 16%;
+    --muted-foreground: 218 11% 55%;
+    --accent: 224 14% 18%;
+    --accent-foreground: 220 14% 90%;
+    --destructive: 0 62.8% 50.6%;
+    --destructive-foreground: 210 40% 98%;
+    --success: 142 70% 45%;
+    --success-foreground: 228 18% 7%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 228 18% 7%;
+    --border: 224 14% 16%;
+    --input: 224 14% 18%;
+    --ring: 245 72% 65%;
+    --sidebar: 228 20% 9%;
+    --sidebar-foreground: 220 14% 75%;
+    --sidebar-border: 224 14% 14%;
+    --sidebar-active: 245 72% 65%;
+    --editor: 226 16% 12%;
+    --editor-foreground: 220 14% 85%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(245 72% 65%), hsl(245 90% 75%));
+    --gradient-surface: linear-gradient(180deg, hsl(228 20% 9%), hsl(226 18% 7%));
+    --shadow-glow: 0 0 40px hsl(245 90% 75% / 0.12);
+    --shadow-elegant: 0 10px 30px -10px hsl(245 72% 65% / 0.2);
+    --shadow-inner-glow: inset 0 1px 0 0 hsl(0 0% 100% / 0.04);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .tool-panel {
+    @apply bg-card rounded-lg border shadow-elegant;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .tool-panel:hover {
+    @apply shadow-glow;
+  }
+
+  .code-editor {
+    @apply bg-editor text-editor-foreground rounded-lg border font-mono text-sm;
+    @apply focus-within:ring-2 focus-within:ring-ring/30 focus-within:border-primary/50;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium;
+    @apply text-sidebar-foreground/70;
+    @apply hover:text-sidebar-foreground hover:bg-accent;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .nav-item.active {
+    @apply text-primary bg-primary/10;
+  }
+
+  .toast-container {
+    @apply fixed bottom-6 right-6 z-50;
+  }
+
+  .toast {
+    @apply px-4 py-3 rounded-lg border shadow-elegant text-sm font-medium;
+    @apply animate-fade-in;
+  }
+
+  .toast-success {
+    @apply bg-success/10 text-success border-success/20;
+  }
+
+  .toast-error {
+    @apply bg-destructive/10 text-destructive border-destructive/20;
+  }
+
+  .toast-info {
+    @apply bg-primary/10 text-primary border-primary/20;
+  }
+}
+
+/* Custom scrollbar for dark theme */
+.dark ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(224 14% 22%);
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: hsl(224 14% 28%);
+}
+
+/* Syntax highlight colors for JSON */
+.json-key { color: hsl(245 72% 65%); }
+.json-string { color: hsl(142 70% 55%); }
+.json-number { color: hsl(38 92% 60%); }
+.json-boolean { color: hsl(345 82% 65%); }
+.json-null { color: hsl(218 11% 55%); }
+.json-bracket { color: hsl(220 14% 60%); }
+
+/* Light mode syntax colors */
+:root .json-key { color: hsl(245 58% 51%); }
+:root .json-string { color: hsl(142 76% 30%); }
+:root .json-number { color: hsl(38 92% 40%); }
+:root .json-boolean { color: hsl(345 82% 50%); }
+:root .json-null { color: hsl(215.4 16.3% 46.9%); }
+:root .json-bracket { color: hsl(220 14% 45%); }
+
+.dark .json-key { color: hsl(245 72% 65%); }
+.dark .json-string { color: hsl(142 70% 55%); }
+.dark .json-number { color: hsl(38 92% 60%); }
+.dark .json-boolean { color: hsl(345 82% 65%); }
+.dark .json-null { color: hsl(218 11% 55%); }
+.dark .json-bracket { color: hsl(220 14% 60%); }
+
+/* JSON Tree View */
+.json-line {
+  white-space: pre;
+  min-height: 1.6em;
+  line-height: 1.6;
+  border-radius: 2px;
+  padding-right: 1rem;
+}
+
+.json-line:hover {
+  background: hsl(var(--accent) / 0.5);
+}
+
+.json-fold-toggle {
+  display: inline-block;
+  width: 1em;
+  text-align: center;
+  cursor: pointer;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.65em;
+  vertical-align: middle;
+  margin-right: 0.25em;
+  border-radius: 2px;
+  transition: color 0.15s ease;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+}
+
+.json-fold-toggle:hover {
+  color: hsl(var(--primary));
+}
+
+.json-fold-spacer {
+  display: inline-block;
+  width: 1.25em;
+}
+
+.json-fold-indicator {
+  color: hsl(var(--muted-foreground) / 0.6);
+  font-style: italic;
+  font-size: 0.85em;
+}
+
+/* Error line highlight */
+.error-line-highlight {
+  background: hsl(var(--destructive) / 0.12);
+  border-left: 3px solid hsl(var(--destructive) / 0.7);
+}
+
+.dark .error-line-highlight {
+  background: hsl(var(--destructive) / 0.15);
+  border-left: 3px solid hsl(var(--destructive) / 0.6);
+}
