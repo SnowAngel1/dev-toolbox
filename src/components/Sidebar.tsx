@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom"
-import { Braces, Clock, Wrench, Sun, Moon, ChevronDown, GitCompare, ArrowDownAZ, FileText, FileType2, Search, Timer } from "lucide-react"
+import { Braces, Clock, Wrench, Sun, Moon, ChevronDown, GitCompare, ArrowDownAZ, FileText, FileType2, Search, Timer, ShieldCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTheme } from "@/lib/useTheme"
 
@@ -165,7 +165,11 @@ export function Navbar() {
       </nav>
 
       {/* 右侧操作 */}
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-3">
+        <span className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground/60 select-none">
+          <ShieldCheck className="h-3 w-3" />
+          所有数据仅在浏览器处理，不上传服务器
+        </span>
         <button
           onClick={toggleTheme}
           className="flex items-center justify-center h-8 w-8 rounded-md text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-accent transition-all duration-150"
