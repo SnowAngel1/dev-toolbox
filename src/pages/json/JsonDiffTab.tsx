@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { usePersistedState } from "@/hooks/usePersistedState"
 import { GitCompare, Trash2, ArrowLeftRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -46,8 +47,8 @@ function computeDiff(left: string, right: string): DiffLine[] {
 
 export function JsonDiffTab() {
   const { toast } = useToast()
-  const [leftInput, setLeftInput] = useState("")
-  const [rightInput, setRightInput] = useState("")
+  const [leftInput, setLeftInput] = usePersistedState("json-diff:left", "")
+  const [rightInput, setRightInput] = usePersistedState("json-diff:right", "")
   const [showDiff, setShowDiff] = useState(false)
 
   const diffResult = useMemo(() => {

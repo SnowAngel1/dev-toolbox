@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { copyToClipboard } from "@/lib/clipboard"
+import { usePersistedState } from "@/hooks/usePersistedState"
 import { CodeEditor } from "@/components/CodeEditor"
 import { Copy, FileDown, Trash2 } from "lucide-react"
 
@@ -17,7 +18,7 @@ function sortKeysRecursive(value: unknown): unknown {
 
 export function JsonSortKeysTab() {
   const { toast } = useToast()
-  const [input, setInput] = useState("")
+  const [input, setInput] = usePersistedState("json-sort:input", "")
   const [output, setOutput] = useState("")
   const [error, setError] = useState<string | undefined>()
   const [errorLine, setErrorLine] = useState<number | null>(null)

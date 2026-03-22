@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { copyToClipboard } from "@/lib/clipboard"
+import { usePersistedState } from "@/hooks/usePersistedState"
 import {
   Clock,
   ArrowRightLeft,
@@ -49,8 +50,8 @@ function formatUTC(d: Date): string {
 }
 
 export function TimestampConverter() {
-  const [direction, setDirection] = useState<ConvertDirection>("toDate")
-  const [input, setInput] = useState("")
+  const [direction, setDirection] = usePersistedState<ConvertDirection>("timestamp:direction", "toDate")
+  const [input, setInput] = usePersistedState("timestamp:input", "")
   const [results, setResults] = useState<{ label: string; value: string }[]>([])
   const [error, setError] = useState("")
   const [now, setNow] = useState(Date.now())

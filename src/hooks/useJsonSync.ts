@@ -1,5 +1,6 @@
-import { useState, useCallback, useRef } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import { useDebouncedCallback } from "./useDebounce"
+import { usePersistedState } from "./usePersistedState"
 
 const SYNC_DELAY = 300
 
@@ -74,7 +75,7 @@ export function useJsonSync(
   onSuccess?: (msg: string) => void,
   onError?: (msg: string) => void
 ): JsonSyncResult {
-  const [input, setInput] = useState("")
+  const [input, setInput] = usePersistedState("json-format:input", "")
   const [output, setOutput] = useState("")
   const [parsedJson, setParsedJson] = useState<unknown | null>(null)
   const [error, setError] = useState("")
@@ -82,6 +83,7 @@ export function useJsonSync(
   const [errorSource, setErrorSource] = useState<"input" | "output" | null>(null)
 
   const isSyncingRef = useRef(false)
+  const initializedRef = useRef(false)
 
   const setErrorState = (msg: string, text: string, source: "input" | "output") => {
     const translated = translateJsonError(msg)
@@ -95,6 +97,21 @@ export function useJsonSync(
     setErrorLine(null)
     setErrorSource(null)
   }
+
+  // On mount, restore output from persisted input
+  useEffect(() => {
+    if (initializedRef.current) return
+    initializedRef.current = true
+    if (!input.trim()) return
+    try {
+      const parsed = JSON.parse(input)
+      setParsedJson(parsed)
+      setOutput(JSON.stringify(parsed, null, 2))
+    } catch {
+      // persisted input is invalid, leave output empty
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Input → Output: parse input, format to output
   const [syncInputToOutput, cancelInputSync] = useDebouncedCallback(

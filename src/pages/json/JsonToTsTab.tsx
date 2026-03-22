@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { copyToClipboard } from "@/lib/clipboard"
+import { usePersistedState } from "@/hooks/usePersistedState"
 import { CodeEditor } from "@/components/CodeEditor"
 import { Copy, FileDown, Trash2 } from "lucide-react"
 
@@ -174,9 +175,9 @@ function jsonToTypeScript(data: unknown, rootName: string): string {
 
 export function JsonToTsTab() {
   const { toast } = useToast()
-  const [input, setInput] = useState("")
+  const [input, setInput] = usePersistedState("json-ts:input", "")
   const [output, setOutput] = useState("")
-  const [rootName, setRootName] = useState("RootObject")
+  const [rootName, setRootName] = usePersistedState("json-ts:rootName", "RootObject")
   const [error, setError] = useState<string | undefined>()
   const [errorLine, setErrorLine] = useState<number | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout>>()

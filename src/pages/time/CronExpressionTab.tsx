@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react"
 import { useToast } from "@/components/ui/toast"
 import { Tooltip } from "@/components/ui/tooltip"
 import { copyToClipboard } from "@/lib/clipboard"
+import { usePersistedState } from "@/hooks/usePersistedState"
 import { Button } from "@/components/ui/button"
 import {
   Copy,
@@ -42,7 +43,7 @@ const WEEK_DAYS = [
 
 export function CronExpressionTab() {
   const { toast } = useToast()
-  const [expression, setExpression] = useState("0 9 * * *")
+  const [expression, setExpression] = usePersistedState("cron:expr", "0 9 * * *")
   const [description, setDescription] = useState("")
   const [error, setError] = useState("")
   const [nextExecs, setNextExecs] = useState<Date[]>([])

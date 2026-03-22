@@ -2,6 +2,7 @@ import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { copyToClipboard } from "@/lib/clipboard"
+import { usePersistedState } from "@/hooks/usePersistedState"
 import { CodeEditor } from "@/components/CodeEditor"
 import { JSONPath } from "jsonpath-plus"
 import { Search, Copy, Trash2, BookOpen } from "lucide-react"
@@ -25,8 +26,8 @@ const EXAMPLE_PATH = "$.store.book[*].author"
 
 export function JsonPathTab() {
   const { toast } = useToast()
-  const [jsonInput, setJsonInput] = useState("")
-  const [expression, setExpression] = useState("")
+  const [jsonInput, setJsonInput] = usePersistedState("json-path:input", "")
+  const [expression, setExpression] = usePersistedState("json-path:expr", "")
   const [result, setResult] = useState("")
   const [matchCount, setMatchCount] = useState<number | null>(null)
   const [jsonError, setJsonError] = useState<string | undefined>()
