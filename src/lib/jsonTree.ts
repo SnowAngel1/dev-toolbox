@@ -18,6 +18,10 @@ export interface JsonLine {
   path?: string
   foldable: boolean
   folded: boolean
+  /** 可编辑值的路径 */
+  valuePath?: string
+  /** 原始值（用于编辑） */
+  rawValue?: unknown
 }
 
 function makeToken(
@@ -47,7 +51,7 @@ export function flattenJsonToLines(
   function pushLine(
     indent: number,
     tokens: JsonToken[],
-    opts?: { path?: string; foldable?: boolean; folded?: boolean }
+    opts?: { path?: string; foldable?: boolean; folded?: boolean; valuePath?: string; rawValue?: unknown }
   ) {
     lines.push({
       lineNumber: lineNum++,
@@ -56,6 +60,8 @@ export function flattenJsonToLines(
       path: opts?.path,
       foldable: opts?.foldable ?? false,
       folded: opts?.folded ?? false,
+      valuePath: opts?.valuePath,
+      rawValue: opts?.rawValue,
     })
   }
 
@@ -68,7 +74,7 @@ export function flattenJsonToLines(
     const comma = isLast ? [] : [makeToken("punctuation", ",")]
 
     if (value === null || typeof value !== "object") {
-      pushLine(indent, [...valueTokens(value), ...comma])
+      pushLine(indent, [...valueTokens(value), ...comma], { valuePath: path, rawValue: value })
       return
     }
 
@@ -121,7 +127,7 @@ export function flattenJsonToLines(
             makeToken("punctuation", ": "),
             ...valueTokens(val),
             ...childComma,
-          ])
+          ], { valuePath: childPath, rawValue: val })
         } else {
           // Key + open bracket on same line for nested objects/arrays
           const nestedIsArray = Array.isArray(val)
@@ -221,9 +227,19 @@ export function collectAllFoldablePaths(
 
 export function getValueAtPath(data: unknown, path: string): unknown {
   if (path === "$") return data
-  // Remove leading "$." or "$"
   const rest = path.startsWith("$.") ? path.slice(2) : path.slice(1)
-  // Tokenize: split by "." but handle "[n]" correctly
+  const segments = parsePathSegments(rest)
+
+  let current: unknown = data
+  for (const seg of segments) {
+    if (current === null || typeof current !== "object") return undefined
+    current = (current as Record<string, unknown>)[String(seg)]
+  }
+  return current
+}
+
+/** 解析路径字符串为段数组 */
+function parsePathSegments(rest: string): (string | number)[] {
   const segments: (string | number)[] = []
   let i = 0
   while (i < rest.length) {
@@ -231,7 +247,7 @@ export function getValueAtPath(data: unknown, path: string): unknown {
       const end = rest.indexOf("]", i)
       segments.push(Number(rest.slice(i + 1, end)))
       i = end + 1
-      if (rest[i] === ".") i++ // skip dot after ]
+      if (rest[i] === ".") i++
     } else {
       const dotIdx = rest.indexOf(".", i)
       const bracketIdx = rest.indexOf("[", i)
@@ -245,11 +261,20 @@ export function getValueAtPath(data: unknown, path: string): unknown {
       if (rest[i] === ".") i++
     }
   }
+  return segments
+}
 
-  let current: unknown = data
-  for (const seg of segments) {
-    if (current === null || typeof current !== "object") return undefined
-    current = (current as Record<string, unknown>)[String(seg)]
+/** 在指定路径设置新值，返回深拷贝后的新数据 */
+export function setValueAtPath(data: unknown, path: string, newValue: unknown): unknown {
+  if (path === "$") return newValue
+  const rest = path.startsWith("$.") ? path.slice(2) : path.slice(1)
+  const segments = parsePathSegments(rest)
+  const cloned = JSON.parse(JSON.stringify(data))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let current: any = cloned
+  for (let i = 0; i < segments.length - 1; i++) {
+    current = current[segments[i]]
   }
-  return current
+  current[segments[segments.length - 1]] = newValue
+  return cloned
 }

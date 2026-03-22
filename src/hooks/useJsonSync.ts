@@ -66,6 +66,8 @@ interface JsonSyncResult {
   handleStringify: () => void
   /** 反字符串化：解包 JSON 字符串 */
   handleUnstringify: () => void
+  /** 树编辑：直接更新 parsedJson 和 output */
+  handleTreeEdit: (updatedJson: unknown) => void
 }
 
 export function useJsonSync(
@@ -120,7 +122,7 @@ export function useJsonSync(
     SYNC_DELAY
   )
 
-  // Output → Input: parse output, compress to input
+  // Output → Input: parse output, format to input
   const [syncOutputToInput, cancelOutputSync] = useDebouncedCallback(
     (text: string) => {
       if (!text.trim()) {
@@ -133,7 +135,7 @@ export function useJsonSync(
         const parsed = JSON.parse(text)
         isSyncingRef.current = true
         setParsedJson(parsed)
-        setInput(JSON.stringify(parsed))
+        setInput(JSON.stringify(parsed, null, 2))
         clearError()
         requestAnimationFrame(() => {
           isSyncingRef.current = false
@@ -170,56 +172,57 @@ export function useJsonSync(
   const handleFormat = useCallback(() => {
     cancelInputSync()
     cancelOutputSync()
-    if (!output.trim()) {
-      setError("输出区没有内容")
+    // 优先从输出区读取，为空则从输入区读取
+    const source = output.trim() ? output : input
+    if (!source.trim()) {
+      setError("没有可格式化的内容")
       setErrorLine(null)
       setErrorSource(null)
       return
     }
     try {
-      const parsed = JSON.parse(output)
+      const parsed = JSON.parse(source)
       const formatted = JSON.stringify(parsed, null, 2)
       setParsedJson(parsed)
-      setOutput(formatted)
-      // 同步回输入
       isSyncingRef.current = true
-      setInput(JSON.stringify(parsed))
+      setOutput(formatted)
       clearError()
       requestAnimationFrame(() => { isSyncingRef.current = false })
       onSuccess?.("JSON 格式化成功")
     } catch (e) {
       const msg = e instanceof Error ? e.message : "无效的 JSON"
-      setErrorState(msg, output, "output")
+      const errorSrc = output.trim() ? "output" : "input"
+      setErrorState(msg, source, errorSrc)
       onError?.("JSON 格式错误")
     }
-  }, [output, cancelInputSync, cancelOutputSync, onSuccess, onError])
+  }, [input, output, cancelInputSync, cancelOutputSync, onSuccess, onError])
 
   const handleCompress = useCallback(() => {
     cancelInputSync()
     cancelOutputSync()
-    if (!output.trim()) {
-      setError("输出区没有内容")
+    const source = output.trim() ? output : input
+    if (!source.trim()) {
+      setError("没有可压缩的内容")
       setErrorLine(null)
       setErrorSource(null)
       return
     }
     try {
-      const parsed = JSON.parse(output)
+      const parsed = JSON.parse(source)
       const compressed = JSON.stringify(parsed)
       setParsedJson(parsed)
-      setOutput(compressed)
-      // 同步回输入
       isSyncingRef.current = true
-      setInput(compressed)
+      setOutput(compressed)
       clearError()
       requestAnimationFrame(() => { isSyncingRef.current = false })
       onSuccess?.("JSON 压缩成功")
     } catch (e) {
       const msg = e instanceof Error ? e.message : "无效的 JSON"
-      setErrorState(msg, output, "output")
+      const errorSrc = output.trim() ? "output" : "input"
+      setErrorState(msg, source, errorSrc)
       onError?.("JSON 格式错误")
     }
-  }, [output, cancelInputSync, cancelOutputSync, onSuccess, onError])
+  }, [input, output, cancelInputSync, cancelOutputSync, onSuccess, onError])
 
   const handleClear = useCallback(() => {
     cancelInputSync()
@@ -341,6 +344,18 @@ export function useJsonSync(
     }
   }, [output, cancelInputSync, cancelOutputSync, onSuccess, onError])
 
+  // 树编辑：直接更新 parsedJson、output 和 input，不触发 debounced sync
+  const handleTreeEdit = useCallback((updatedJson: unknown) => {
+    cancelInputSync()
+    cancelOutputSync()
+    isSyncingRef.current = true
+    setParsedJson(updatedJson)
+    setOutput(JSON.stringify(updatedJson, null, 2))
+    setInput(JSON.stringify(updatedJson, null, 2))
+    clearError()
+    requestAnimationFrame(() => { isSyncingRef.current = false })
+  }, [cancelInputSync, cancelOutputSync])
+
   return {
     input,
     output,
@@ -357,5 +372,6 @@ export function useJsonSync(
     handleUnescape,
     handleStringify,
     handleUnstringify,
+    handleTreeEdit,
   }
 }

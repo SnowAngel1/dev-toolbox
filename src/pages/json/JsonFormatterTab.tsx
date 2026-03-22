@@ -4,7 +4,7 @@ import { useToast } from "@/components/ui/toast"
 import { CodeEditor } from "@/components/CodeEditor"
 import { JsonTreeView } from "@/components/JsonTreeView"
 import { useJsonSync } from "@/hooks/useJsonSync"
-import { collectAllFoldablePaths, getValueAtPath } from "@/lib/jsonTree"
+import { collectAllFoldablePaths, getValueAtPath, setValueAtPath } from "@/lib/jsonTree"
 import {
   Braces,
   Minimize2,
@@ -39,6 +39,7 @@ export function JsonFormatterTab() {
     handleUnescape,
     handleStringify,
     handleUnstringify,
+    handleTreeEdit,
   } = useJsonSync(
     (msg) => toast(msg, "success"),
     (msg) => toast(msg, "error")
@@ -46,6 +47,19 @@ export function JsonFormatterTab() {
 
   const [outputMode, setOutputMode] = useState<OutputMode>("tree")
   const [foldedPaths, setFoldedPaths] = useState<Set<string>>(new Set())
+
+  // 判断输出是否已格式化（含换行即为格式化状态）
+  const isOutputFormatted = output.includes("\n")
+
+  const handleFormatToggle = useCallback(() => {
+    if (isOutputFormatted) {
+      handleCompress()
+      setOutputMode("edit")
+    } else {
+      handleFormat()
+      setOutputMode("tree")
+    }
+  }, [isOutputFormatted, handleCompress, handleFormat])
 
   const handleToggleFold = useCallback((path: string) => {
     setFoldedPaths((prev) => {
@@ -115,6 +129,13 @@ export function JsonFormatterTab() {
     setFoldedPaths(new Set())
   }, [handleClear])
 
+  // 树编辑：更新指定路径的值
+  const handleValueChange = useCallback((path: string, newValue: unknown) => {
+    if (parsedJson === null) return
+    const updated = setValueAtPath(parsedJson, path, newValue)
+    handleTreeEdit(updated)
+  }, [parsedJson, handleTreeEdit])
+
   // 根据 errorSource 分别传错误给对应编辑器
   const inputError = errorSource === "input" ? error : undefined
   const inputErrorLine = errorSource === "input" ? errorLine : undefined
@@ -143,7 +164,7 @@ export function JsonFormatterTab() {
       {/* 输出区 */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* 输出标签行 */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             输出
           </label>
@@ -156,7 +177,7 @@ export function JsonFormatterTab() {
                   : "text-muted-foreground hover:text-foreground hover:bg-accent"
               }`}
               onClick={switchToTree}
-              title="树视图：支持折叠/展开 JSON 结构"
+              title="树视图：支持折叠/展开 JSON 结构，双击值可编辑"
             >
               <ListTree className="h-3.5 w-3.5" />
               树视图
@@ -201,102 +222,98 @@ export function JsonFormatterTab() {
           </div>
         </div>
 
-        {/* 输出内容容器 */}
-        <div className="relative flex-1 flex flex-col min-h-0">
-          {/* 浮动工具栏 - 放在输出框内右上角 */}
-          <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-background/80 backdrop-blur-sm rounded-md border border-border/50 p-1 shadow-sm">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={handleFormat}
-              title="格式化：将 JSON 格式化为带缩进的易读格式"
-            >
-              <Braces className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={handleCompress}
-              title="压缩：移除空格和换行，压缩为单行"
-            >
+        {/* 工具栏 */}
+        <div className="flex items-center gap-1 mb-1 bg-muted/30 rounded-md border border-border/50 p-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={handleFormatToggle}
+            title={isOutputFormatted ? "压缩：移除空格和换行，压缩为单行" : "格式化：将 JSON 格式化为带缩进的易读格式"}
+          >
+            {isOutputFormatted ? (
               <Minimize2 className="h-3.5 w-3.5" />
-            </Button>
-            <div className="w-px h-4 bg-border" />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={handleEscape}
-              title="转义：将换行、引号等转为转义字符"
-            >
-              <WrapText className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={handleUnescape}
-              title="反转义：将转义字符还原为实际字符"
-            >
-              <WrapText className="h-3.5 w-3.5 rotate-180" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={handleStringify}
-              title="字符串化：将内容包装成 JSON 字符串"
-            >
-              <Quote className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={handleUnstringify}
-              title="反字符串化：解包 JSON 字符串"
-            >
-              <Quote className="h-3.5 w-3.5 opacity-50" />
-            </Button>
-            <div className="w-px h-4 bg-border" />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={handleCopy}
-              title="复制：将输出内容复制到剪贴板"
-            >
-              <Copy className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={handleDownload}
-              title="下载：将输出内容保存为 JSON 文件"
-            >
-              <FileDown className="h-3.5 w-3.5" />
-            </Button>
-            <div className="w-px h-4 bg-border" />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={onClear}
-              title="清空：清除输入和输出内容"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </div>
+            ) : (
+              <Braces className="h-3.5 w-3.5" />
+            )}
+          </Button>
+          <div className="w-px h-4 bg-border" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={handleEscape}
+            title="转义：将换行、引号等转为转义字符"
+          >
+            <WrapText className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={handleUnescape}
+            title="反转义：将转义字符还原为实际字符"
+          >
+            <WrapText className="h-3.5 w-3.5 rotate-180" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={handleStringify}
+            title="字符串化：将内容包装成 JSON 字符串"
+          >
+            <Quote className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={handleUnstringify}
+            title="反字符串化：解包 JSON 字符串"
+          >
+            <Quote className="h-3.5 w-3.5 opacity-50" />
+          </Button>
+          <div className="w-px h-4 bg-border" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={handleCopy}
+            title="复制：将输出内容复制到剪贴板"
+          >
+            <Copy className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={handleDownload}
+            title="下载：将输出内容保存为 JSON 文件"
+          >
+            <FileDown className="h-3.5 w-3.5" />
+          </Button>
+          <div className="w-px h-4 bg-border" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={onClear}
+            title="清空：清除输入和输出内容"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
 
+        {/* 输出内容容器 */}
+        <div className="flex-1 flex flex-col min-h-0">
           {/* 输出内容 */}
           {outputMode === "tree" && parsedJson !== null ? (
             <JsonTreeView
               data={parsedJson}
               foldedPaths={foldedPaths}
               onToggleFold={handleToggleFold}
+              onValueChange={handleValueChange}
             />
           ) : (
             <CodeEditor

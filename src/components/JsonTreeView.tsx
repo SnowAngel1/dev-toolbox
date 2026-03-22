@@ -1,4 +1,4 @@
-import { useMemo, useRef, useCallback } from "react"
+import { useMemo, useRef, useCallback, useState } from "react"
 import { cn } from "@/lib/utils"
 import { flattenJsonToLines, type JsonLine, type JsonToken } from "@/lib/jsonTree"
 
@@ -6,6 +6,7 @@ interface JsonTreeViewProps {
   data: unknown
   foldedPaths: Set<string>
   onToggleFold: (path: string) => void
+  onValueChange?: (path: string, newValue: unknown) => void
   className?: string
 }
 
@@ -23,12 +24,189 @@ function TokenSpan({ token }: { token: JsonToken }) {
   return <span className={classMap[token.type]}>{token.text}</span>
 }
 
+/** 智能解析编辑后的值 */
+function parseEditedValue(text: string, originalValue: unknown): unknown {
+  const trimmed = text.trim()
+  if (trimmed === "null") return null
+  if (trimmed === "true") return true
+  if (trimmed === "false") return false
+  // 如果原始值是数字类型，尝试解析为数字
+  if (typeof originalValue === "number") {
+    const num = Number(trimmed)
+    if (!isNaN(num) && trimmed !== "") return num
+  }
+  // 纯数字字符串也解析为数字
+  if (/^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(trimmed)) {
+    return Number(trimmed)
+  }
+  return text
+}
+
+/** 获取编辑时显示的原始文本 */
+function getEditText(rawValue: unknown): string {
+  if (rawValue === null) return "null"
+  if (typeof rawValue === "boolean") return String(rawValue)
+  if (typeof rawValue === "number") return String(rawValue)
+  if (typeof rawValue === "string") return rawValue
+  return String(rawValue)
+}
+
+function EditableTokens({
+  line,
+  editingPath,
+  onStartEdit,
+  onCommitEdit,
+  onCancelEdit,
+}: {
+  line: JsonLine
+  editingPath: string | null
+  onStartEdit: (path: string, rawValue: unknown) => void
+  onCommitEdit: (text: string) => void
+  onCancelEdit: () => void
+}) {
+  const isEditing = line.valuePath != null && editingPath === line.valuePath
+  const hasEditableValue = line.valuePath != null
+
+  if (!hasEditableValue) {
+    return (
+      <>
+        {line.tokens.map((token, i) => (
+          <TokenSpan key={i} token={token} />
+        ))}
+      </>
+    )
+  }
+
+  // 找到值 token 的范围（排除 key、冒号、逗号）
+  const valueTokenTypes = new Set(["string", "number", "boolean", "null"])
+  const firstValueIdx = line.tokens.findIndex((t) => valueTokenTypes.has(t.type))
+  const lastValueIdx = line.tokens.reduce(
+    (last, t, i) => (valueTokenTypes.has(t.type) ? i : last),
+    -1
+  )
+
+  if (isEditing) {
+    return (
+      <>
+        {/* key + 冒号部分 */}
+        {line.tokens.slice(0, firstValueIdx).map((token, i) => (
+          <TokenSpan key={i} token={token} />
+        ))}
+        {/* 编辑输入框 */}
+        <InlineEditor
+          initialValue={getEditText(line.rawValue)}
+          onCommit={onCommitEdit}
+          onCancel={onCancelEdit}
+          valueType={line.rawValue}
+        />
+        {/* 逗号部分 */}
+        {line.tokens.slice(lastValueIdx + 1).map((token, i) => (
+          <TokenSpan key={`after-${i}`} token={token} />
+        ))}
+      </>
+    )
+  }
+
+  return (
+    <>
+      {line.tokens.map((token, i) => {
+        if (i >= firstValueIdx && i <= lastValueIdx) {
+          return (
+            <span
+              key={i}
+              className={`${
+                token.type === "string"
+                  ? "json-string"
+                  : token.type === "number"
+                  ? "json-number"
+                  : token.type === "boolean"
+                  ? "json-boolean"
+                  : "json-null"
+              } cursor-pointer hover:outline hover:outline-1 hover:outline-primary/50 hover:rounded-sm`}
+              onDoubleClick={() => onStartEdit(line.valuePath!, line.rawValue)}
+              title="双击编辑"
+            >
+              {token.text}
+            </span>
+          )
+        }
+        return <TokenSpan key={i} token={token} />
+      })}
+    </>
+  )
+}
+
+function InlineEditor({
+  initialValue,
+  onCommit,
+  onCancel,
+  valueType,
+}: {
+  initialValue: string
+  onCommit: (text: string) => void
+  onCancel: () => void
+  valueType: unknown
+}) {
+  const [text, setText] = useState(initialValue)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // 布尔类型用 select
+  if (typeof valueType === "boolean") {
+    return (
+      <select
+        ref={useRef<HTMLSelectElement>(null) as any}
+        autoFocus
+        value={text}
+        onChange={(e) => {
+          onCommit(e.target.value)
+        }}
+        onBlur={onCancel}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") onCancel()
+        }}
+        className="inline-edit-select"
+      >
+        <option value="true">true</option>
+        <option value="false">false</option>
+      </select>
+    )
+  }
+
+  return (
+    <input
+      ref={inputRef}
+      autoFocus
+      type="text"
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={() => onCommit(text)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault()
+          onCommit(text)
+        }
+        if (e.key === "Escape") onCancel()
+      }}
+      onFocus={(e) => e.target.select()}
+      className="inline-edit-input"
+    />
+  )
+}
+
 function TreeLine({
   line,
   onToggleFold,
+  editingPath,
+  onStartEdit,
+  onCommitEdit,
+  onCancelEdit,
 }: {
   line: JsonLine
   onToggleFold: (path: string) => void
+  editingPath: string | null
+  onStartEdit: (path: string, rawValue: unknown) => void
+  onCommitEdit: (text: string) => void
+  onCancelEdit: () => void
 }) {
   const indentStr = "  ".repeat(line.indent)
 
@@ -47,10 +225,14 @@ function TreeLine({
       ) : (
         <span className="json-fold-spacer" />
       )}
-      {/* Tokens */}
-      {line.tokens.map((token, i) => (
-        <TokenSpan key={i} token={token} />
-      ))}
+      {/* Tokens with editing support */}
+      <EditableTokens
+        line={line}
+        editingPath={editingPath}
+        onStartEdit={onStartEdit}
+        onCommitEdit={onCommitEdit}
+        onCancelEdit={onCancelEdit}
+      />
     </div>
   )
 }
@@ -59,10 +241,13 @@ export function JsonTreeView({
   data,
   foldedPaths,
   onToggleFold,
+  onValueChange,
   className,
 }: JsonTreeViewProps) {
   const contentRef = useRef<HTMLDivElement>(null)
   const lineNumberRef = useRef<HTMLDivElement>(null)
+  const [editingPath, setEditingPath] = useState<string | null>(null)
+  const editingRawValueRef = useRef<unknown>(null)
 
   const lines = useMemo(
     () => flattenJsonToLines(data, foldedPaths),
@@ -73,6 +258,26 @@ export function JsonTreeView({
     if (contentRef.current && lineNumberRef.current) {
       lineNumberRef.current.scrollTop = contentRef.current.scrollTop
     }
+  }, [])
+
+  const handleStartEdit = useCallback((path: string, rawValue: unknown) => {
+    if (!onValueChange) return
+    setEditingPath(path)
+    editingRawValueRef.current = rawValue
+  }, [onValueChange])
+
+  const handleCommitEdit = useCallback((text: string) => {
+    if (editingPath && onValueChange) {
+      const newValue = parseEditedValue(text, editingRawValueRef.current)
+      onValueChange(editingPath, newValue)
+    }
+    setEditingPath(null)
+    editingRawValueRef.current = null
+  }, [editingPath, onValueChange])
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingPath(null)
+    editingRawValueRef.current = null
   }, [])
 
   return (
@@ -107,6 +312,10 @@ export function JsonTreeView({
             key={line.lineNumber}
             line={line}
             onToggleFold={onToggleFold}
+            editingPath={editingPath}
+            onStartEdit={handleStartEdit}
+            onCommitEdit={handleCommitEdit}
+            onCancelEdit={handleCancelEdit}
           />
         ))}
       </div>

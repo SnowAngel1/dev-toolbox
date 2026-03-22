@@ -229,6 +229,44 @@
   font-size: 0.85em;
 }
 
+/* Inline edit input */
+.inline-edit-input {
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--primary) / 0.5);
+  border-radius: 2px;
+  color: hsl(var(--foreground));
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  padding: 0 4px;
+  outline: none;
+  min-width: 40px;
+  max-width: 400px;
+}
+
+.inline-edit-input:focus {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.3);
+}
+
+.inline-edit-select {
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--primary) / 0.5);
+  border-radius: 2px;
+  color: hsl(var(--foreground));
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  padding: 0 4px;
+  outline: none;
+  cursor: pointer;
+}
+
+.inline-edit-select:focus {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.3);
+}
+
 /* Error line highlight */
 .error-line-highlight {
   background: hsl(var(--destructive) / 0.12);
