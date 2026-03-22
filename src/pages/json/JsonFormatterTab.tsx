@@ -10,6 +10,7 @@ import {
   Braces,
   Minimize2,
   Copy,
+  Check,
   Trash2,
   FileDown,
   ListTree,
@@ -48,6 +49,7 @@ export function JsonFormatterTab() {
 
   const [outputMode, setOutputMode] = useState<OutputMode>("tree")
   const [foldedPaths, setFoldedPaths] = useState<Set<string>>(new Set())
+  const [copied, setCopied] = useState(false)
 
   // 判断输出是否已格式化（含换行即为格式化状态）
   const isOutputFormatted = output.includes("\n")
@@ -93,6 +95,8 @@ export function JsonFormatterTab() {
     if (!text) return
     navigator.clipboard.writeText(text).then(() => {
       toast("已复制到剪贴板", "success")
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
     })
   }, [output, input, toast])
 
@@ -229,7 +233,7 @@ export function JsonFormatterTab() {
 
         {/* 工具栏 */}
         <div className="flex items-center gap-1 mb-1 bg-muted/30 rounded-md border border-border/50 p-1">
-          <Tooltip content={isOutputFormatted ? "压缩为单行" : "格式化缩进"}>
+          <Tooltip content={isOutputFormatted ? "压缩为单行" : "格式化缩进"} position="bottom">
             <Button
               variant="ghost"
               size="icon"
@@ -244,7 +248,7 @@ export function JsonFormatterTab() {
             </Button>
           </Tooltip>
           <div className="w-px h-4 bg-border" />
-          <Tooltip content="转义">
+          <Tooltip content="转义" position="bottom">
             <Button
               variant="ghost"
               size="icon"
@@ -254,7 +258,7 @@ export function JsonFormatterTab() {
               <WrapText className="h-3.5 w-3.5" />
             </Button>
           </Tooltip>
-          <Tooltip content="反转义">
+          <Tooltip content="反转义" position="bottom">
             <Button
               variant="ghost"
               size="icon"
@@ -264,7 +268,7 @@ export function JsonFormatterTab() {
               <WrapText className="h-3.5 w-3.5 rotate-180" />
             </Button>
           </Tooltip>
-          <Tooltip content="字符串化">
+          <Tooltip content="字符串化" position="bottom">
             <Button
               variant="ghost"
               size="icon"
@@ -274,7 +278,7 @@ export function JsonFormatterTab() {
               <Quote className="h-3.5 w-3.5" />
             </Button>
           </Tooltip>
-          <Tooltip content="反字符串化">
+          <Tooltip content="反字符串化" position="bottom">
             <Button
               variant="ghost"
               size="icon"
@@ -285,17 +289,21 @@ export function JsonFormatterTab() {
             </Button>
           </Tooltip>
           <div className="w-px h-4 bg-border" />
-          <Tooltip content="复制">
+          <Tooltip content={copied ? "已复制" : "复制"} position="bottom">
             <Button
               variant="ghost"
               size="icon"
               className="h-7 w-7"
               onClick={handleCopy}
             >
-              <Copy className="h-3.5 w-3.5" />
+              {copied ? (
+                <Check className="h-3.5 w-3.5 text-green-500" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
             </Button>
           </Tooltip>
-          <Tooltip content="下载">
+          <Tooltip content="下载" position="bottom">
             <Button
               variant="ghost"
               size="icon"
@@ -306,7 +314,7 @@ export function JsonFormatterTab() {
             </Button>
           </Tooltip>
           <div className="w-px h-4 bg-border" />
-          <Tooltip content="清空">
+          <Tooltip content="清空" position="bottom">
             <Button
               variant="ghost"
               size="icon"

@@ -4,19 +4,23 @@ interface TooltipProps {
   content: string
   children: ReactNode
   delay?: number
+  position?: "top" | "bottom"
 }
 
-export function Tooltip({ content, children, delay = 200 }: TooltipProps) {
+export function Tooltip({ content, children, delay = 200, position: fixedPosition }: TooltipProps) {
   const [visible, setVisible] = useState(false)
-  const [position, setPosition] = useState<"top" | "bottom">("top")
+  const [autoPosition, setAutoPosition] = useState<"top" | "bottom">("bottom")
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const triggerRef = useRef<HTMLDivElement>(null)
 
+  const pos = fixedPosition ?? autoPosition
+
   const show = () => {
     timerRef.current = setTimeout(() => {
-      if (triggerRef.current) {
+      if (!fixedPosition && triggerRef.current) {
         const rect = triggerRef.current.getBoundingClientRect()
-        setPosition(rect.top < 50 ? "bottom" : "top")
+        const viewH = window.innerHeight
+        setAutoPosition(viewH - rect.bottom < 40 ? "top" : "bottom")
       }
       setVisible(true)
     }, delay)
@@ -37,8 +41,8 @@ export function Tooltip({ content, children, delay = 200 }: TooltipProps) {
       {children}
       {visible && (
         <div
-          className={`absolute left-1/2 -translate-x-1/2 z-50 px-2 py-1 text-xs rounded-md whitespace-nowrap bg-foreground text-background shadow-md pointer-events-none ${
-            position === "top" ? "bottom-full mb-1.5" : "top-full mt-1.5"
+          className={`absolute left-1/2 -translate-x-1/2 z-50 px-2.5 py-1.5 text-xs font-medium rounded-md whitespace-nowrap bg-foreground text-background shadow-lg pointer-events-none ${
+            pos === "top" ? "bottom-full mb-2" : "top-full mt-2"
           }`}
         >
           {content}
