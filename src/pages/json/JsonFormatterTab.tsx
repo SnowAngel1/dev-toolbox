@@ -5,6 +5,7 @@ import { useToast } from "@/components/ui/toast"
 import { CodeEditor } from "@/components/CodeEditor"
 import { JsonTreeView } from "@/components/JsonTreeView"
 import { useJsonSync } from "@/hooks/useJsonSync"
+import { copyToClipboard } from "@/lib/clipboard"
 import { collectAllFoldablePaths, getValueAtPath, setValueAtPath } from "@/lib/jsonTree"
 import {
   Braces,
@@ -93,7 +94,7 @@ export function JsonFormatterTab() {
   const handleCopy = useCallback(() => {
     const text = output || input
     if (!text) return
-    navigator.clipboard.writeText(text).then(() => {
+    copyToClipboard(text).then(() => {
       toast("已复制到剪贴板", "success")
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)

@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { copyToClipboard } from "@/lib/clipboard"
 import { CodeEditor } from "@/components/CodeEditor"
 import { JSONPath } from "jsonpath-plus"
 import { Search, Copy, Trash2, BookOpen } from "lucide-react"
@@ -80,7 +81,7 @@ export function JsonPathTab() {
 
   const handleCopy = useCallback(() => {
     if (!result) return
-    navigator.clipboard.writeText(result).then(() => toast("已复制到剪贴板", "success"))
+    copyToClipboard(result).then(() => toast("已复制到剪贴板", "success"))
   }, [result, toast])
 
   const handleClear = useCallback(() => {

@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { copyToClipboard } from "@/lib/clipboard"
 import { CodeEditor } from "@/components/CodeEditor"
 import { Copy, FileDown, Trash2 } from "lucide-react"
 
@@ -211,7 +212,7 @@ export function JsonToTsTab() {
 
   const handleCopy = useCallback(() => {
     if (!output) return
-    navigator.clipboard.writeText(output).then(() => toast("已复制到剪贴板", "success"))
+    copyToClipboard(output).then(() => toast("已复制到剪贴板", "success"))
   }, [output, toast])
 
   const handleDownload = useCallback(() => {

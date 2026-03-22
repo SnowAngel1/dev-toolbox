@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react"
 import { useToast } from "@/components/ui/toast"
 import { Tooltip } from "@/components/ui/tooltip"
+import { copyToClipboard } from "@/lib/clipboard"
 import { Button } from "@/components/ui/button"
 import {
   Copy,
@@ -91,7 +92,7 @@ export function CronExpressionTab() {
 
   const handleCopy = useCallback(() => {
     if (!expression.trim()) return
-    navigator.clipboard.writeText(expression).then(() => {
+    copyToClipboard(expression).then(() => {
       toast("已复制到剪贴板", "success")
     })
   }, [expression, toast])

@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { copyToClipboard } from "@/lib/clipboard"
 import {
   Clock,
   ArrowRightLeft,
@@ -112,7 +113,7 @@ export function TimestampConverter() {
 
   const copyValue = useCallback(
     (value: string) => {
-      navigator.clipboard.writeText(value).then(() => {
+      copyToClipboard(value).then(() => {
         toast("已复制到剪贴板", "success")
       })
     },
