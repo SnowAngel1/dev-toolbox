@@ -11,6 +11,8 @@
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cron-parser": "^5.5.0",
+    "cronstrue": "^3.14.0",
     "js-yaml": "^4.1.1",
     "jsonpath-plus": "^10.4.0",
     "lucide-react": "^0.468.0",

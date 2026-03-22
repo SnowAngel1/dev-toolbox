@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom"
-import { Braces, Clock, Wrench, Sun, Moon, ChevronDown, GitCompare, ArrowDownAZ, FileText, FileType2, Search } from "lucide-react"
+import { Braces, Clock, Wrench, Sun, Moon, ChevronDown, GitCompare, ArrowDownAZ, FileText, FileType2, Search, Timer } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTheme } from "@/lib/useTheme"
 
@@ -55,9 +55,21 @@ const tools: ToolItem[] = [
     ],
   },
   {
-    name: "时间转换",
-    path: "/timestamp",
+    name: "时间工具",
+    path: "/time",
     icon: <Clock className="h-4 w-4" />,
+    children: [
+      {
+        name: "时间转换",
+        path: "/time/timestamp",
+        icon: <Clock className="h-3.5 w-3.5" />,
+      },
+      {
+        name: "Cron 表达式",
+        path: "/time/cron",
+        icon: <Timer className="h-3.5 w-3.5" />,
+      },
+    ],
   },
 ]
 

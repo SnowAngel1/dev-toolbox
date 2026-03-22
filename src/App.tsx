@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { Navbar } from "@/components/Sidebar"
 import { ToastProvider } from "@/components/ui/toast"
 import { JsonTools } from "@/pages/JsonTools"
-import { TimestampConverter } from "@/pages/TimestampConverter"
+import { TimeTools } from "@/pages/TimeTools"
 
 function App() {
   return (
@@ -15,7 +15,9 @@ function App() {
               <Route path="/" element={<Navigate to="/json/format" replace />} />
               <Route path="/json" element={<Navigate to="/json/format" replace />} />
               <Route path="/json/*" element={<JsonTools />} />
-              <Route path="/timestamp" element={<TimestampConverter />} />
+              <Route path="/time" element={<Navigate to="/time/timestamp" replace />} />
+              <Route path="/time/*" element={<TimeTools />} />
+              <Route path="/timestamp" element={<Navigate to="/time/timestamp" replace />} />
             </Routes>
           </main>
         </div>
