@@ -25,17 +25,11 @@ function TokenSpan({ token }: { token: JsonToken }) {
 }
 
 /** 智能解析编辑后的值 */
-function parseEditedValue(text: string, originalValue: unknown): unknown {
+function parseEditedValue(text: string): unknown {
   const trimmed = text.trim()
   if (trimmed === "null") return null
   if (trimmed === "true") return true
   if (trimmed === "false") return false
-  // 如果原始值是数字类型，尝试解析为数字
-  if (typeof originalValue === "number") {
-    const num = Number(trimmed)
-    if (!isNaN(num) && trimmed !== "") return num
-  }
-  // 纯数字字符串也解析为数字
   if (/^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(trimmed)) {
     return Number(trimmed)
   }
@@ -97,7 +91,6 @@ function EditableTokens({
           initialValue={getEditText(line.rawValue)}
           onCommit={onCommitEdit}
           onCancel={onCancelEdit}
-          valueType={line.rawValue}
         />
         {/* 逗号部分 */}
         {line.tokens.slice(lastValueIdx + 1).map((token, i) => (
@@ -140,37 +133,13 @@ function InlineEditor({
   initialValue,
   onCommit,
   onCancel,
-  valueType,
 }: {
   initialValue: string
   onCommit: (text: string) => void
   onCancel: () => void
-  valueType: unknown
 }) {
   const [text, setText] = useState(initialValue)
   const inputRef = useRef<HTMLInputElement>(null)
-
-  // 布尔类型用 select
-  if (typeof valueType === "boolean") {
-    return (
-      <select
-        ref={useRef<HTMLSelectElement>(null) as any}
-        autoFocus
-        value={text}
-        onChange={(e) => {
-          onCommit(e.target.value)
-        }}
-        onBlur={onCancel}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") onCancel()
-        }}
-        className="inline-edit-select"
-      >
-        <option value="true">true</option>
-        <option value="false">false</option>
-      </select>
-    )
-  }
 
   return (
     <input
@@ -268,7 +237,7 @@ export function JsonTreeView({
 
   const handleCommitEdit = useCallback((text: string) => {
     if (editingPath && onValueChange) {
-      const newValue = parseEditedValue(text, editingRawValueRef.current)
+      const newValue = parseEditedValue(text)
       onValueChange(editingPath, newValue)
     }
     setEditingPath(null)

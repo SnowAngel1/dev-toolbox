@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
+import { Tooltip } from "@/components/ui/tooltip"
 import { useToast } from "@/components/ui/toast"
 import { CodeEditor } from "@/components/CodeEditor"
 import { JsonTreeView } from "@/components/JsonTreeView"
@@ -170,53 +171,57 @@ export function JsonFormatterTab() {
           </label>
           <div className="flex items-center gap-1">
             {/* 模式切换 */}
-            <button
-              className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
-                outputMode === "tree"
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
-              }`}
-              onClick={switchToTree}
-              title="树视图：支持折叠/展开 JSON 结构，双击值可编辑"
-            >
-              <ListTree className="h-3.5 w-3.5" />
-              树视图
-            </button>
-            <button
-              className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
-                outputMode === "edit"
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
-              }`}
-              onClick={switchToEdit}
-              title="编辑模式：直接修改格式化后的 JSON 文本"
-            >
-              <Code2 className="h-3.5 w-3.5" />
-              编辑
-            </button>
+            <Tooltip content="树视图：折叠/展开，双击编辑">
+              <button
+                className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                  outputMode === "tree"
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                }`}
+                onClick={switchToTree}
+              >
+                <ListTree className="h-3.5 w-3.5" />
+                树视图
+              </button>
+            </Tooltip>
+            <Tooltip content="编辑模式：直接修改 JSON 文本">
+              <button
+                className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                  outputMode === "edit"
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                }`}
+                onClick={switchToEdit}
+              >
+                <Code2 className="h-3.5 w-3.5" />
+                编辑
+              </button>
+            </Tooltip>
 
             {/* 折叠控制 - 仅在树模式显示 */}
             {outputMode === "tree" && parsedJson !== null && (
               <>
                 <div className="w-px h-4 bg-border mx-1" />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={handleFoldAll}
-                  title="全部折叠"
-                >
-                  <ChevronsDownUp className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={handleExpandAll}
-                  title="全部展开"
-                >
-                  <ChevronsUpDown className="h-3.5 w-3.5" />
-                </Button>
+                <Tooltip content="全部折叠">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={handleFoldAll}
+                  >
+                    <ChevronsDownUp className="h-3.5 w-3.5" />
+                  </Button>
+                </Tooltip>
+                <Tooltip content="全部展开">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={handleExpandAll}
+                  >
+                    <ChevronsUpDown className="h-3.5 w-3.5" />
+                  </Button>
+                </Tooltip>
               </>
             )}
           </div>
@@ -224,85 +229,93 @@ export function JsonFormatterTab() {
 
         {/* 工具栏 */}
         <div className="flex items-center gap-1 mb-1 bg-muted/30 rounded-md border border-border/50 p-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={handleFormatToggle}
-            title={isOutputFormatted ? "压缩：移除空格和换行，压缩为单行" : "格式化：将 JSON 格式化为带缩进的易读格式"}
-          >
-            {isOutputFormatted ? (
-              <Minimize2 className="h-3.5 w-3.5" />
-            ) : (
-              <Braces className="h-3.5 w-3.5" />
-            )}
-          </Button>
+          <Tooltip content={isOutputFormatted ? "压缩为单行" : "格式化缩进"}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleFormatToggle}
+            >
+              {isOutputFormatted ? (
+                <Minimize2 className="h-3.5 w-3.5" />
+              ) : (
+                <Braces className="h-3.5 w-3.5" />
+              )}
+            </Button>
+          </Tooltip>
           <div className="w-px h-4 bg-border" />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={handleEscape}
-            title="转义：将换行、引号等转为转义字符"
-          >
-            <WrapText className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={handleUnescape}
-            title="反转义：将转义字符还原为实际字符"
-          >
-            <WrapText className="h-3.5 w-3.5 rotate-180" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={handleStringify}
-            title="字符串化：将内容包装成 JSON 字符串"
-          >
-            <Quote className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={handleUnstringify}
-            title="反字符串化：解包 JSON 字符串"
-          >
-            <Quote className="h-3.5 w-3.5 opacity-50" />
-          </Button>
+          <Tooltip content="转义">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleEscape}
+            >
+              <WrapText className="h-3.5 w-3.5" />
+            </Button>
+          </Tooltip>
+          <Tooltip content="反转义">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleUnescape}
+            >
+              <WrapText className="h-3.5 w-3.5 rotate-180" />
+            </Button>
+          </Tooltip>
+          <Tooltip content="字符串化">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleStringify}
+            >
+              <Quote className="h-3.5 w-3.5" />
+            </Button>
+          </Tooltip>
+          <Tooltip content="反字符串化">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleUnstringify}
+            >
+              <Quote className="h-3.5 w-3.5 opacity-50" />
+            </Button>
+          </Tooltip>
           <div className="w-px h-4 bg-border" />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={handleCopy}
-            title="复制：将输出内容复制到剪贴板"
-          >
-            <Copy className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={handleDownload}
-            title="下载：将输出内容保存为 JSON 文件"
-          >
-            <FileDown className="h-3.5 w-3.5" />
-          </Button>
+          <Tooltip content="复制">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleCopy}
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
+          </Tooltip>
+          <Tooltip content="下载">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleDownload}
+            >
+              <FileDown className="h-3.5 w-3.5" />
+            </Button>
+          </Tooltip>
           <div className="w-px h-4 bg-border" />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={onClear}
-            title="清空：清除输入和输出内容"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          <Tooltip content="清空">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onClear}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </Tooltip>
         </div>
 
         {/* 输出内容容器 */}
