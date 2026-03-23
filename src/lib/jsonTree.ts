@@ -69,12 +69,16 @@ export function flattenJsonToLines(
     value: unknown,
     indent: number,
     path: string,
-    isLast: boolean
+    isLast: boolean,
+    key?: string
   ) {
     const comma = isLast ? [] : [makeToken("punctuation", ",")]
+    const keyTokens: JsonToken[] = key !== undefined
+      ? [makeToken("key", JSON.stringify(key)), makeToken("punctuation", ": ")]
+      : []
 
     if (value === null || typeof value !== "object") {
-      pushLine(indent, [...valueTokens(value), ...comma], { valuePath: path, rawValue: value })
+      pushLine(indent, [...keyTokens, ...valueTokens(value), ...comma], { valuePath: path, rawValue: value })
       return
     }
 
@@ -88,12 +92,13 @@ export function flattenJsonToLines(
     const isFolded = isFoldable && foldedPaths.has(path)
 
     if (isFolded) {
-      // Collapsed: { ...3 items } or [ ...3 items ]
+      // Collapsed: key: { ...3 properties } or [ ...3 items ]
       const count = entries.length
       const label = `${count} ${isArray ? "items" : "properties"}`
       pushLine(
         indent,
         [
+          ...keyTokens,
           makeToken("bracket", openBracket),
           makeToken("fold-indicator", ` ...${label} `),
           makeToken("bracket", closeBracket),
@@ -104,92 +109,22 @@ export function flattenJsonToLines(
       return
     }
 
-    // Open bracket line
-    pushLine(indent, [makeToken("bracket", openBracket)], {
+    // Open bracket line (with optional key prefix)
+    pushLine(indent, [...keyTokens, makeToken("bracket", openBracket)], {
       path,
       foldable: isFoldable,
       folded: false,
     })
 
     // Children
-    entries.forEach(([key, val], idx) => {
-      const childPath = isArray ? `${path}[${key}]` : `${path}.${key}`
+    entries.forEach(([childKey, val], idx) => {
+      const childPath = isArray ? `${path}[${childKey}]` : `${path}.${childKey}`
       const childIsLast = idx === entries.length - 1
 
-      if (!isArray) {
-        // Object property: render key on the same line as value (if primitive)
-        if (val === null || typeof val !== "object") {
-          const childComma = childIsLast
-            ? []
-            : [makeToken("punctuation", ",")]
-          pushLine(indent + 1, [
-            makeToken("key", JSON.stringify(key)),
-            makeToken("punctuation", ": "),
-            ...valueTokens(val),
-            ...childComma,
-          ], { valuePath: childPath, rawValue: val })
-        } else {
-          // Key + open bracket on same line for nested objects/arrays
-          const nestedIsArray = Array.isArray(val)
-          const nestedOpen = nestedIsArray ? "[" : "{"
-          const nestedClose = nestedIsArray ? "]" : "}"
-          const nestedEntries = nestedIsArray
-            ? (val as unknown[]).map((v, i) => [String(i), v] as const)
-            : Object.entries(val as Record<string, unknown>)
-          const nestedFoldable = nestedEntries.length > 0
-          const nestedFolded =
-            nestedFoldable && foldedPaths.has(childPath)
-
-          if (nestedFolded) {
-            const count = nestedEntries.length
-            const label = `${count} ${nestedIsArray ? "items" : "properties"}`
-            const childComma = childIsLast
-              ? []
-              : [makeToken("punctuation", ",")]
-            pushLine(
-              indent + 1,
-              [
-                makeToken("key", JSON.stringify(key)),
-                makeToken("punctuation", ": "),
-                makeToken("bracket", nestedOpen),
-                makeToken("fold-indicator", ` ...${label} `),
-                makeToken("bracket", nestedClose),
-                ...childComma,
-              ],
-              { path: childPath, foldable: true, folded: true }
-            )
-          } else {
-            // Key + open bracket
-            pushLine(
-              indent + 1,
-              [
-                makeToken("key", JSON.stringify(key)),
-                makeToken("punctuation", ": "),
-                makeToken("bracket", nestedOpen),
-              ],
-              { path: childPath, foldable: nestedFoldable, folded: false }
-            )
-            // Render children
-            nestedEntries.forEach(([nKey, nVal], nIdx) => {
-              const nChildPath = nestedIsArray
-                ? `${childPath}[${nKey}]`
-                : `${childPath}.${nKey}`
-              const nChildIsLast = nIdx === nestedEntries.length - 1
-              processValue(nVal, indent + 2, nChildPath, nChildIsLast)
-            })
-            // Close bracket
-            const childComma = childIsLast
-              ? []
-              : [makeToken("punctuation", ",")]
-            pushLine(indent + 1, [
-              makeToken("bracket", nestedClose),
-              ...childComma,
-            ])
-          }
-        }
-      } else {
-        // Array element
+      if (isArray) {
         processValue(val, indent + 1, childPath, childIsLast)
+      } else {
+        processValue(val, indent + 1, childPath, childIsLast, childKey)
       }
     })
 
