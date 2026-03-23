@@ -197,6 +197,18 @@
   background: hsl(var(--accent) / 0.5);
 }
 
+.json-indent-guide {
+  display: inline-block;
+  width: 2ch;
+  border-left: 1px solid hsl(var(--border));
+  height: 1.6em;
+  vertical-align: top;
+}
+
+.json-line:hover .json-indent-guide {
+  border-left-color: hsl(var(--muted-foreground) / 0.4);
+}
+
 .json-fold-toggle {
   display: inline-block;
   width: 1em;

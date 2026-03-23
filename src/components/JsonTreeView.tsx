@@ -177,12 +177,12 @@ function TreeLine({
   onCommitEdit: (text: string) => void
   onCancelEdit: () => void
 }) {
-  const indentStr = "  ".repeat(line.indent)
-
   return (
     <div className="json-line group">
-      {/* Indent + fold toggle */}
-      <span className="json-bracket">{indentStr}</span>
+      {/* Indent guides */}
+      {Array.from({ length: line.indent }, (_, i) => (
+        <span key={i} className="json-indent-guide" />
+      ))}
       {line.foldable && line.path ? (
         <button
           className="json-fold-toggle"
