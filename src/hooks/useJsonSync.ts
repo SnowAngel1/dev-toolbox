@@ -63,10 +63,6 @@ interface JsonSyncResult {
   handleEscape: () => void
   /** 反转义：把转义序列还原成实际字符 */
   handleUnescape: () => void
-  /** 字符串化：把 JSON 包装成 JSON 字符串 */
-  handleStringify: () => void
-  /** 反字符串化：解包 JSON 字符串 */
-  handleUnstringify: () => void
   /** 树编辑：直接更新 parsedJson 和 output */
   handleTreeEdit: (updatedJson: unknown) => void
 }
@@ -250,7 +246,7 @@ export function useJsonSync(
     clearError()
   }, [cancelInputSync, cancelOutputSync])
 
-  // 转义：把特殊字符转成转义序列（\n, \t, \", \\）
+  // 转义：把特殊字符转成转义序列（\n, \t, \", \\），仅修改输出
   const handleEscape = useCallback(() => {
     cancelInputSync()
     cancelOutputSync()
@@ -266,15 +262,14 @@ export function useJsonSync(
       .replace(/\r/g, "\\r")
       .replace(/\t/g, "\\t")
       .replace(/"/g, '\\"')
-    setOutput(escaped)
     isSyncingRef.current = true
-    setInput(escaped)
+    setOutput(escaped)
     clearError()
     requestAnimationFrame(() => { isSyncingRef.current = false })
     onSuccess?.("转义成功")
   }, [output, cancelInputSync, cancelOutputSync, onSuccess])
 
-  // 反转义：把转义序列还原成实际字符
+  // 反转义：把转义序列还原成实际字符，仅修改输出
   const handleUnescape = useCallback(() => {
     cancelInputSync()
     cancelOutputSync()
@@ -287,9 +282,8 @@ export function useJsonSync(
     try {
       // 尝试用 JSON.parse 解析字符串来处理转义
       const unescaped = JSON.parse(`"${output.replace(/^"|"$/g, "")}"`)
-      setOutput(unescaped)
       isSyncingRef.current = true
-      setInput(unescaped)
+      setOutput(unescaped)
       clearError()
       requestAnimationFrame(() => { isSyncingRef.current = false })
       onSuccess?.("反转义成功")
@@ -301,65 +295,13 @@ export function useJsonSync(
         .replace(/\\t/g, "\t")
         .replace(/\\"/g, '"')
         .replace(/\\\\/g, "\\")
-      setOutput(unescaped)
       isSyncingRef.current = true
-      setInput(unescaped)
+      setOutput(unescaped)
       clearError()
       requestAnimationFrame(() => { isSyncingRef.current = false })
       onSuccess?.("反转义成功")
     }
   }, [output, cancelInputSync, cancelOutputSync, onSuccess])
-
-  // 字符串化：把整个内容包装成 JSON 字符串
-  const handleStringify = useCallback(() => {
-    cancelInputSync()
-    cancelOutputSync()
-    if (!output.trim()) {
-      setError("输出区没有内容")
-      setErrorLine(null)
-      setErrorSource(null)
-      return
-    }
-    const stringified = JSON.stringify(output)
-    setOutput(stringified)
-    isSyncingRef.current = true
-    setInput(stringified)
-    clearError()
-    requestAnimationFrame(() => { isSyncingRef.current = false })
-    onSuccess?.("字符串化成功")
-  }, [output, cancelInputSync, cancelOutputSync, onSuccess])
-
-  // 反字符串化：解包 JSON 字符串
-  const handleUnstringify = useCallback(() => {
-    cancelInputSync()
-    cancelOutputSync()
-    if (!output.trim()) {
-      setError("输出区没有内容")
-      setErrorLine(null)
-      setErrorSource(null)
-      return
-    }
-    try {
-      const parsed = JSON.parse(output)
-      if (typeof parsed !== "string") {
-        setError("内容不是一个 JSON 字符串")
-        setErrorLine(null)
-        setErrorSource(null)
-        onError?.("内容不是字符串")
-        return
-      }
-      setOutput(parsed)
-      isSyncingRef.current = true
-      setInput(parsed)
-      clearError()
-      requestAnimationFrame(() => { isSyncingRef.current = false })
-      onSuccess?.("反字符串化成功")
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "解析失败"
-      setErrorState(msg, output, "output")
-      onError?.("反字符串化失败")
-    }
-  }, [output, cancelInputSync, cancelOutputSync, onSuccess, onError])
 
   // 树编辑：直接更新 parsedJson、output 和 input，不触发 debounced sync
   const handleTreeEdit = useCallback((updatedJson: unknown) => {
@@ -387,8 +329,6 @@ export function useJsonSync(
     handleClear,
     handleEscape,
     handleUnescape,
-    handleStringify,
-    handleUnstringify,
     handleTreeEdit,
   }
 }

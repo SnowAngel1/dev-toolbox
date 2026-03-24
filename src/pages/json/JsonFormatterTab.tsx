@@ -19,7 +19,6 @@ import {
   ChevronsDownUp,
   ChevronsUpDown,
   WrapText,
-  Quote,
 } from "lucide-react"
 
 type OutputMode = "tree" | "edit"
@@ -40,8 +39,6 @@ export function JsonFormatterTab() {
     handleClear,
     handleEscape,
     handleUnescape,
-    handleStringify,
-    handleUnstringify,
     handleTreeEdit,
   } = useJsonSync(
     (msg) => toast(msg, "success"),
@@ -51,6 +48,7 @@ export function JsonFormatterTab() {
   const [outputMode, setOutputMode] = useState<OutputMode>("tree")
   const [foldedPaths, setFoldedPaths] = useState<Set<string>>(new Set())
   const [copied, setCopied] = useState(false)
+  const [isEscaped, setIsEscaped] = useState(false)
 
   // 判断输出是否已格式化（含换行即为格式化状态）
   const isOutputFormatted = output.includes("\n")
@@ -64,6 +62,17 @@ export function JsonFormatterTab() {
       setOutputMode("tree")
     }
   }, [isOutputFormatted, handleCompress, handleFormat])
+
+  const handleEscapeToggle = useCallback(() => {
+    if (isEscaped) {
+      handleUnescape()
+      setIsEscaped(false)
+    } else {
+      handleEscape()
+      setIsEscaped(true)
+    }
+    setOutputMode("edit")
+  }, [isEscaped, handleEscape, handleUnescape])
 
   const handleToggleFold = useCallback((path: string) => {
     setFoldedPaths((prev) => {
@@ -133,6 +142,7 @@ export function JsonFormatterTab() {
   const onClear = useCallback(() => {
     handleClear()
     setFoldedPaths(new Set())
+    setIsEscaped(false)
   }, [handleClear])
 
   // 树编辑：更新指定路径的值
@@ -249,44 +259,18 @@ export function JsonFormatterTab() {
             </Button>
           </Tooltip>
           <div className="w-px h-4 bg-border" />
-          <Tooltip content="转义" position="bottom">
+          <Tooltip content={isEscaped ? "反转义" : "转义"} position="bottom">
             <Button
               variant="ghost"
               size="icon"
               className="h-7 w-7"
-              onClick={handleEscape}
+              onClick={handleEscapeToggle}
             >
-              <WrapText className="h-3.5 w-3.5" />
-            </Button>
-          </Tooltip>
-          <Tooltip content="反转义" position="bottom">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={handleUnescape}
-            >
-              <WrapText className="h-3.5 w-3.5 rotate-180" />
-            </Button>
-          </Tooltip>
-          <Tooltip content="字符串化" position="bottom">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={handleStringify}
-            >
-              <Quote className="h-3.5 w-3.5" />
-            </Button>
-          </Tooltip>
-          <Tooltip content="反字符串化" position="bottom">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={handleUnstringify}
-            >
-              <Quote className="h-3.5 w-3.5 opacity-50" />
+              {isEscaped ? (
+                <WrapText className="h-3.5 w-3.5 rotate-180" />
+              ) : (
+                <WrapText className="h-3.5 w-3.5" />
+              )}
             </Button>
           </Tooltip>
           <div className="w-px h-4 bg-border" />
