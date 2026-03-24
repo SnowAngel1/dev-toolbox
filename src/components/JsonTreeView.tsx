@@ -263,7 +263,8 @@ export function JsonTreeView({
         {lines.map((line) => (
           <div
             key={line.lineNumber}
-            className="text-muted-foreground/40 text-xs leading-[1.6] font-mono"
+            className="text-muted-foreground/40 text-xs font-mono"
+            style={{ height: 22.4, lineHeight: '22.4px' }}
           >
             {line.lineNumber}
           </div>

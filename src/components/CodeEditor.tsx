@@ -89,11 +89,12 @@ export function CodeEditor({
             <div
               key={lineNum}
               className={cn(
-                "text-xs leading-[1.6] font-mono px-1 -mx-1 rounded-sm",
+                "text-xs font-mono px-1 -mx-1 rounded-sm",
                 isErrorLine
                   ? "bg-destructive/20 text-destructive font-bold"
                   : "text-muted-foreground/40"
               )}
+              style={{ height: LINE_HEIGHT, lineHeight: `${LINE_HEIGHT}px` }}
             >
               {lineNum}
             </div>
