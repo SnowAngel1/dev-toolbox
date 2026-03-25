@@ -41,10 +41,12 @@ export function CodeEditor({
     if (textareaRef.current && lineNumberRef.current) {
       lineNumberRef.current.scrollTop = textareaRef.current.scrollTop
     }
-    if (textareaRef.current && highlightRef.current) {
-      highlightRef.current.scrollTop = textareaRef.current.scrollTop
+    // 更新高亮层位置，使其跟随滚动
+    if (textareaRef.current && highlightRef.current && errorLine) {
+      const scrollTop = textareaRef.current.scrollTop
+      highlightRef.current.style.transform = `translateY(-${scrollTop}px)`
     }
-  }, [])
+  }, [errorLine])
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -107,11 +109,11 @@ export function CodeEditor({
         {/* 错误行高亮背景层 */}
         {errorLine && (
           <div
-            ref={highlightRef}
             className="absolute inset-0 overflow-hidden pointer-events-none"
             aria-hidden="true"
           >
             <div
+              ref={highlightRef}
               className="error-line-highlight"
               style={{
                 position: "absolute",

@@ -65,6 +65,8 @@ interface JsonSyncResult {
   handleUnescape: () => void
   /** 树编辑：直接更新 parsedJson 和 output */
   handleTreeEdit: (updatedJson: unknown) => void
+  /** 将输出同步到输入 */
+  applyOutputToInput: () => void
 }
 
 export function useJsonSync(
@@ -315,6 +317,29 @@ export function useJsonSync(
     requestAnimationFrame(() => { isSyncingRef.current = false })
   }, [cancelInputSync, cancelOutputSync])
 
+  // 将输出同步到输入
+  const applyOutputToInput = useCallback(() => {
+    cancelInputSync()
+    cancelOutputSync()
+    if (!output.trim()) {
+      setError("输出区没有内容")
+      setErrorLine(null)
+      setErrorSource(null)
+      return
+    }
+    try {
+      const parsed = JSON.parse(output)
+      isSyncingRef.current = true
+      setParsedJson(parsed)
+      setInput(output)
+      clearError()
+      requestAnimationFrame(() => { isSyncingRef.current = false })
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "无效的 JSON"
+      setErrorState(msg, output, "output")
+    }
+  }, [output, cancelInputSync, cancelOutputSync])
+
   return {
     input,
     output,
@@ -330,5 +355,6 @@ export function useJsonSync(
     handleEscape,
     handleUnescape,
     handleTreeEdit,
+    applyOutputToInput,
   }
 }

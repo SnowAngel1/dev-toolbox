@@ -19,6 +19,7 @@ import {
   ChevronsDownUp,
   ChevronsUpDown,
   WrapText,
+  ArrowLeft,
 } from "lucide-react"
 
 type OutputMode = "tree" | "edit"
@@ -40,6 +41,7 @@ export function JsonFormatterTab() {
     handleEscape,
     handleUnescape,
     handleTreeEdit,
+    applyOutputToInput,
   } = useJsonSync(
     (msg) => toast(msg, "success"),
     (msg) => toast(msg, "error")
@@ -244,6 +246,18 @@ export function JsonFormatterTab() {
 
         {/* 工具栏 */}
         <div className="flex items-center gap-1 mb-1 bg-muted/30 rounded-md border border-border/50 p-1">
+          <Tooltip content="同步格式到输入侧" position="bottom">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={applyOutputToInput}
+              disabled={!output.trim()}
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </Button>
+          </Tooltip>
+          <div className="w-px h-4 bg-border" />
           <Tooltip content={isOutputFormatted ? "压缩为单行" : "格式化缩进"} position="bottom">
             <Button
               variant="ghost"

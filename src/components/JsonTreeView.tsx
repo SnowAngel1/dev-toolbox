@@ -24,24 +24,37 @@ function TokenSpan({ token }: { token: JsonToken }) {
   return <span className={classMap[token.type]}>{token.text}</span>
 }
 
-/** 智能解析编辑后的值 */
+/** 解析编辑后的值，完全按照用户输入 */
 function parseEditedValue(text: string): unknown {
   const trimmed = text.trim()
+  
+  // null
   if (trimmed === "null") return null
+  
+  // boolean
   if (trimmed === "true") return true
   if (trimmed === "false") return false
+  
+  // number（不带引号的纯数字）
   if (/^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(trimmed)) {
     return Number(trimmed)
   }
-  return text
+  
+  // string（带引号的，去掉引号）
+  if (/^".*"$/.test(trimmed) && trimmed.length >= 2) {
+    return trimmed.slice(1, -1)
+  }
+  
+  // 其他情况作为字符串返回
+  return trimmed
 }
 
-/** 获取编辑时显示的原始文本 */
+/** 获取编辑时显示的原始文本，包含引号 */
 function getEditText(rawValue: unknown): string {
   if (rawValue === null) return "null"
   if (typeof rawValue === "boolean") return String(rawValue)
   if (typeof rawValue === "number") return String(rawValue)
-  if (typeof rawValue === "string") return rawValue
+  if (typeof rawValue === "string") return `"${rawValue}"`
   return String(rawValue)
 }
 
@@ -54,7 +67,7 @@ function EditableTokens({
 }: {
   line: JsonLine
   editingPath: string | null
-  onStartEdit: (path: string, rawValue: unknown) => void
+  onStartEdit: (path: string, rawValue: unknown, tokenType: string) => void
   onCommitEdit: (text: string) => void
   onCancelEdit: () => void
 }) {
@@ -79,6 +92,10 @@ function EditableTokens({
     -1
   )
 
+  // 获取值的 token 类型
+  const valueToken = line.tokens.find((t) => valueTokenTypes.has(t.type))
+  const tokenType = (valueToken?.type as "string" | "number" | "boolean" | "null") ?? "string"
+
   if (isEditing) {
     return (
       <>
@@ -89,6 +106,7 @@ function EditableTokens({
         {/* 编辑输入框 */}
         <InlineEditor
           initialValue={getEditText(line.rawValue)}
+          tokenType={tokenType}
           onCommit={onCommitEdit}
           onCancel={onCancelEdit}
         />
@@ -116,7 +134,7 @@ function EditableTokens({
                   ? "json-boolean"
                   : "json-null"
               } cursor-pointer hover:outline hover:outline-1 hover:outline-primary/50 hover:rounded-sm`}
-              onDoubleClick={() => onStartEdit(line.valuePath!, line.rawValue)}
+              onDoubleClick={() => onStartEdit(line.valuePath!, line.rawValue, token.type)}
               title="双击编辑"
             >
               {token.text}
@@ -131,34 +149,54 @@ function EditableTokens({
 
 function InlineEditor({
   initialValue,
+  tokenType,
   onCommit,
   onCancel,
 }: {
   initialValue: string
+  tokenType: "string" | "number" | "boolean" | "null"
   onCommit: (text: string) => void
   onCancel: () => void
 }) {
   const [text, setText] = useState(initialValue)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // 根据 token 类型获取对应的样式类名
+  const getTokenClass = () => {
+    switch (tokenType) {
+      case "string":
+        return "json-string"
+      case "number":
+        return "json-number"
+      case "boolean":
+        return "json-boolean"
+      case "null":
+        return "json-null"
+      default:
+        return ""
+    }
+  }
+
   return (
-    <input
-      ref={inputRef}
-      autoFocus
-      type="text"
-      value={text}
-      onChange={(e) => setText(e.target.value)}
-      onBlur={() => onCommit(text)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault()
-          onCommit(text)
-        }
-        if (e.key === "Escape") onCancel()
-      }}
-      onFocus={(e) => e.target.select()}
-      className="inline-edit-input"
-    />
+    <span className="inline-edit-wrapper">
+      <input
+        ref={inputRef}
+        autoFocus
+        type="text"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={() => onCommit(text)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault()
+            onCommit(text)
+          }
+          if (e.key === "Escape") onCancel()
+        }}
+        onFocus={(e) => e.target.select()}
+        className={`inline-edit-input-inline ${getTokenClass()}`}
+      />
+    </span>
   )
 }
 
@@ -173,7 +211,7 @@ function TreeLine({
   line: JsonLine
   onToggleFold: (path: string) => void
   editingPath: string | null
-  onStartEdit: (path: string, rawValue: unknown) => void
+  onStartEdit: (path: string, rawValue: unknown, tokenType: string) => void
   onCommitEdit: (text: string) => void
   onCancelEdit: () => void
 }) {
@@ -217,6 +255,7 @@ export function JsonTreeView({
   const lineNumberRef = useRef<HTMLDivElement>(null)
   const [editingPath, setEditingPath] = useState<string | null>(null)
   const editingRawValueRef = useRef<unknown>(null)
+  const editingTokenTypeRef = useRef<string>("string")
 
   const lines = useMemo(
     () => flattenJsonToLines(data, foldedPaths),
@@ -229,10 +268,11 @@ export function JsonTreeView({
     }
   }, [])
 
-  const handleStartEdit = useCallback((path: string, rawValue: unknown) => {
+  const handleStartEdit = useCallback((path: string, rawValue: unknown, tokenType: string) => {
     if (!onValueChange) return
     setEditingPath(path)
     editingRawValueRef.current = rawValue
+    editingTokenTypeRef.current = tokenType
   }, [onValueChange])
 
   const handleCommitEdit = useCallback((text: string) => {
@@ -242,11 +282,13 @@ export function JsonTreeView({
     }
     setEditingPath(null)
     editingRawValueRef.current = null
+    editingTokenTypeRef.current = "string"
   }, [editingPath, onValueChange])
 
   const handleCancelEdit = useCallback(() => {
     setEditingPath(null)
     editingRawValueRef.current = null
+    editingTokenTypeRef.current = "string"
   }, [])
 
   return (
