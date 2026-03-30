@@ -9,6 +9,7 @@ interface CodeEditorProps {
   className?: string
   error?: string
   errorLine?: number | null
+  activeSelection?: { start: number; end: number; rev: number } | null
 }
 
 const LINE_HEIGHT = 22.4 // 14px * 1.6
@@ -22,6 +23,7 @@ export function CodeEditor({
   className,
   error,
   errorLine,
+  activeSelection,
 }: CodeEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const lineNumberRef = useRef<HTMLDivElement>(null)
@@ -36,6 +38,26 @@ export function CodeEditor({
   useEffect(() => {
     updateLineCount(value)
   }, [value, updateLineCount])
+
+  // 匹配项选中与滚动定位
+  useEffect(() => {
+    if (!activeSelection) return
+    const ta = textareaRef.current
+    if (!ta) return
+    ta.focus()
+    ta.selectionStart = activeSelection.start
+    ta.selectionEnd = activeSelection.end
+    const lineNumber = value.substring(0, activeSelection.start).split("\n").length - 1
+    const targetTop = lineNumber * LINE_HEIGHT
+    const viewportTop = ta.scrollTop
+    const viewportBottom = ta.scrollTop + ta.clientHeight
+    if (targetTop < viewportTop || targetTop + LINE_HEIGHT > viewportBottom) {
+      ta.scrollTop = Math.max(0, targetTop - ta.clientHeight / 2 + LINE_HEIGHT / 2)
+    }
+    if (lineNumberRef.current) {
+      lineNumberRef.current.scrollTop = ta.scrollTop
+    }
+  }, [activeSelection]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleScroll = useCallback(() => {
     if (textareaRef.current && lineNumberRef.current) {

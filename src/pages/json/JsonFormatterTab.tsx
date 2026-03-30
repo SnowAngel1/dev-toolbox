@@ -1,9 +1,10 @@
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Tooltip } from "@/components/ui/tooltip"
 import { useToast } from "@/components/ui/toast"
 import { CodeEditor } from "@/components/CodeEditor"
 import { JsonTreeView } from "@/components/JsonTreeView"
+import { ReplacePanel } from "@/components/ReplacePanel"
 import { useJsonSync } from "@/hooks/useJsonSync"
 import { copyToClipboard } from "@/lib/clipboard"
 import { collectAllFoldablePaths, getValueAtPath, setValueAtPath } from "@/lib/jsonTree"
@@ -20,6 +21,7 @@ import {
   ChevronsUpDown,
   WrapText,
   ArrowLeft,
+  Replace,
 } from "lucide-react"
 
 type OutputMode = "tree" | "edit"
@@ -51,6 +53,9 @@ export function JsonFormatterTab() {
   const [foldedPaths, setFoldedPaths] = useState<Set<string>>(new Set())
   const [copied, setCopied] = useState(false)
   const [isEscaped, setIsEscaped] = useState(false)
+  const [showReplace, setShowReplace] = useState(false)
+  const [activeSelection, setActiveSelection] = useState<{ start: number; end: number; rev: number } | null>(null)
+  const selectionRevRef = useRef(0)
 
   // 判断输出是否已格式化（含换行即为格式化状态）
   const isOutputFormatted = output.includes("\n")
@@ -141,10 +146,29 @@ export function JsonFormatterTab() {
     setOutputMode("edit")
   }, [])
 
+  const handleReplaceAll = useCallback(
+    (newText: string) => {
+      handleOutputChange(newText)
+      setOutputMode("edit")
+    },
+    [handleOutputChange]
+  )
+
+  const handleMatchFocus = useCallback(
+    (start: number, end: number) => {
+      selectionRevRef.current += 1
+      setActiveSelection({ start, end, rev: selectionRevRef.current })
+      setOutputMode("edit")
+    },
+    []
+  )
+
   const onClear = useCallback(() => {
     handleClear()
     setFoldedPaths(new Set())
     setIsEscaped(false)
+    setShowReplace(false)
+    setActiveSelection(null)
   }, [handleClear])
 
   // 树编辑：更新指定路径的值
@@ -282,6 +306,16 @@ export function JsonFormatterTab() {
                 )}
               </Button>
             </Tooltip>
+            <Tooltip content="批量替换" position="bottom">
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-7 w-7 ${showReplace ? "bg-primary/10 text-primary" : ""}`}
+                onClick={() => setShowReplace((v) => !v)}
+              >
+                <Replace className="h-3.5 w-3.5" />
+              </Button>
+            </Tooltip>
             <div className="w-px h-4 bg-border" />
             <Tooltip content={copied ? "已复制" : "复制"} position="bottom">
               <Button
@@ -320,6 +354,16 @@ export function JsonFormatterTab() {
             </Tooltip>
           </div>
 
+          {/* 批量替换面板 */}
+          {showReplace && (
+            <ReplacePanel
+              text={output}
+              onReplace={handleReplaceAll}
+              onClose={() => { setShowReplace(false); setActiveSelection(null) }}
+              onMatchFocus={handleMatchFocus}
+            />
+          )}
+
           {/* 输出内容 */}
           {outputMode === "tree" && parsedJson !== null ? (
             <JsonTreeView
@@ -335,6 +379,7 @@ export function JsonFormatterTab() {
               placeholder="格式化结果将显示在这里..."
               error={outputError}
               errorLine={outputErrorLine}
+              activeSelection={activeSelection}
             />
           )}
         </div>
