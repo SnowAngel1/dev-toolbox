@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom"
-import { Braces, Clock, Wrench, Sun, Moon, ChevronDown, GitCompare, ArrowDownAZ, FileText, FileType2, Search, Timer, ShieldCheck } from "lucide-react"
+import { Braces, Clock, Wrench, Sun, Moon, ChevronDown, GitCompare, ArrowDownAZ, FileText, FileType2, Search, Timer, ShieldCheck, Globe } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTheme } from "@/lib/useTheme"
 
@@ -166,6 +166,11 @@ export function Navbar() {
 
       {/* 右侧操作 */}
       <div className="ml-auto flex items-center gap-3">
+        <a href="https://dvbox.top" target="_blank" rel="noopener noreferrer" className="hidden sm:flex items-center gap-1 text-xs text-primary/70 hover:text-primary select-none">
+          <Globe className="h-3 w-3" />
+          dvbox.top
+        </a>
+        <div className="h-4 w-px bg-sidebar-border shrink-0 hidden sm:block" />
         <span className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground/60 select-none">
           <ShieldCheck className="h-3 w-3" />
           所有数据仅在浏览器处理，不上传服务器

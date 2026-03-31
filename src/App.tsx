@@ -20,6 +20,11 @@ function App() {
               <Route path="/timestamp" element={<Navigate to="/time/timestamp" replace />} />
             </Routes>
           </main>
+          <footer className="shrink-0 text-center text-xs text-muted-foreground py-1 border-t border-border/50">
+            <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
+              京ICP备2026015425号-1
+            </a>
+          </footer>
         </div>
       </ToastProvider>
     </BrowserRouter>
