@@ -44,7 +44,12 @@ export function CodeEditor({
     if (!activeSelection) return
     const ta = textareaRef.current
     if (!ta) return
-    ta.focus()
+    // 仅在焦点不在其他输入框时才聚焦 textarea，避免抢占 ReplacePanel 输入框的焦点
+    const activeEl = document.activeElement
+    const isExternalInput = activeEl && activeEl !== ta && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA")
+    if (!isExternalInput) {
+      ta.focus()
+    }
     ta.selectionStart = activeSelection.start
     ta.selectionEnd = activeSelection.end
     const lineNumber = value.substring(0, activeSelection.start).split("\n").length - 1
