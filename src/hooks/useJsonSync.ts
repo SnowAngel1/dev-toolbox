@@ -33,17 +33,22 @@ function translateJsonError(msg: string): string {
     const token = m?.[1] || ""
     return `遇到意外的字符 '${token}'`
   }
+  if (/Expected ':' after property name/.test(msg)) return "属性名称后缺少 ':'"
   if (/Expected property name/.test(msg)) return "期望属性名称（key 必须用双引号包裹）"
   if (/Expected ',' or '}'/.test(msg)) return "期望 ',' 或 '}'"
   if (/Expected ',' or ']'/.test(msg)) return "期望 ',' 或 ']'"
   if (/Expected double-quoted property name/.test(msg)) return "属性名称必须用双引号包裹"
+  if (/Expected '\\]'/.test(msg)) return "期望 ']'"
+  if (/Expected '}'/.test(msg)) return "期望 '}'"
+  if (/Unterminated string/.test(msg)) return "字符串未闭合（缺少引号）"
   if (/Bad control character/.test(msg)) return "包含非法控制字符"
   if (/Bad string/.test(msg)) return "字符串格式错误"
   if (/Bad number/.test(msg)) return "数字格式错误"
   if (/Bad escaped character/.test(msg)) return "包含非法转义字符"
   if (/Unexpected non-whitespace/.test(msg)) return "JSON 值之后存在多余内容"
-  // 兜底：保留原文
-  return msg
+  if (/is not valid JSON/.test(msg)) return "无效的 JSON 格式"
+  // 兜底：去除尾部位置信息，保留核心描述
+  return msg.replace(/\s+at position \d+.*$/, "").replace(/\s+in JSON.*$/, "")
 }
 
 interface JsonSyncResult {
@@ -131,6 +136,10 @@ export function useJsonSync(
         })
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Invalid JSON"
+        setParsedJson(null)
+        isSyncingRef.current = true
+        setOutput("")
+        requestAnimationFrame(() => { isSyncingRef.current = false })
         setErrorState(msg, text, "input")
       }
     },
