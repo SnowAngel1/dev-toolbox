@@ -22,8 +22,6 @@ import {
   WrapText,
   ArrowLeft,
   Replace,
-  ChevronRight,
-  ChevronLeft,
 } from "lucide-react"
 
 type OutputMode = "tree" | "edit"
@@ -56,7 +54,6 @@ export function JsonFormatterTab() {
   const [copied, setCopied] = useState(false)
   const [isEscaped, setIsEscaped] = useState(false)
   const [showReplace, setShowReplace] = useState(false)
-  const [toolbarCollapsed, setToolbarCollapsed] = useState(false)
   const [activeSelection, setActiveSelection] = useState<{ start: number; end: number; rev: number } | null>(null)
   const selectionRevRef = useRef(0)
 
@@ -190,7 +187,7 @@ export function JsonFormatterTab() {
     <div className="h-full flex gap-0 min-h-0 p-6 pt-4">
       {/* 输入区 */}
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex items-end justify-between mb-1 min-h-[24px]">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             输入
           </label>
@@ -203,183 +200,102 @@ export function JsonFormatterTab() {
         />
       </div>
 
-      {/* 分隔线 */}
-      <div className="w-px bg-border mx-4 shrink-0" />
+      {/* 中间同步按钮 - 上下居中 */}
+      <div className="flex flex-col items-center justify-center mx-1 shrink-0">
+        <Tooltip content="同步格式至输入" position="top">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 rounded-full"
+            onClick={applyOutputToInput}
+            disabled={!output.trim()}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        </Tooltip>
+      </div>
 
       {/* 输出区 */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* 输出标签行 - 与输入侧对齐 */}
-        <div className="flex items-center justify-between mb-1">
-          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+        {/* 输出标签行 + 工具栏 */}
+        <div className="flex items-end justify-between mb-1 min-h-[24px]">
+          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider shrink-0">
             输出
           </label>
+          <div className="flex items-center gap-1 ml-2">
+            {/* 模式切换 */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-1.5 text-xs gap-1"
+              onClick={outputMode === "tree" ? switchToEdit : switchToTree}
+            >
+              {outputMode === "tree" ? (
+                <><Code2 className="h-3 w-3" />编辑</>
+              ) : (
+                <><ListTree className="h-3 w-3" />树视图</>
+              )}
+            </Button>
+            {/* 折叠控制 - 仅在树模式显示 */}
+            {outputMode === "tree" && parsedJson !== null && (
+              foldedPaths.size > 0 ? (
+                <Button variant="ghost" size="sm" className="h-6 px-1.5 text-xs gap-1" onClick={handleExpandAll}>
+                  <ChevronsUpDown className="h-3 w-3" />
+                  展开
+                </Button>
+              ) : (
+                <Button variant="ghost" size="sm" className="h-6 px-1.5 text-xs gap-1" onClick={handleFoldAll}>
+                  <ChevronsDownUp className="h-3 w-3" />
+                  折叠
+                </Button>
+              )
+            )}
+            <div className="w-px h-3.5 bg-border" />
+            <Button variant="ghost" size="sm" className="h-6 px-1.5 text-xs gap-1" onClick={handleFormatToggle}>
+              {isOutputFormatted ? (
+                <Minimize2 className="h-3 w-3" />
+              ) : (
+                <Braces className="h-3 w-3" />
+              )}
+              {isOutputFormatted ? "压缩" : "格式化"}
+            </Button>
+            <div className="w-px h-3.5 bg-border" />
+            <Button variant="ghost" size="sm" className="h-6 px-1.5 text-xs gap-1" onClick={handleEscapeToggle}>
+              <WrapText className={`h-3 w-3 ${isEscaped ? "rotate-180" : ""}`} />
+              {isEscaped ? "反转义" : "转义"}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`h-6 px-1.5 text-xs gap-1 ${showReplace ? "bg-primary/10 text-primary" : ""}`}
+              onClick={() => setShowReplace((v) => !v)}
+            >
+              <Replace className="h-3 w-3" />
+              替换
+            </Button>
+            <div className="w-px h-3.5 bg-border" />
+            <Button variant="ghost" size="sm" className="h-6 px-1.5 text-xs gap-1" onClick={handleCopy}>
+              {copied ? (
+                <Check className="h-3 w-3 text-green-500" />
+              ) : (
+                <Copy className="h-3 w-3" />
+              )}
+              {copied ? "已复制" : "复制"}
+            </Button>
+            <Button variant="ghost" size="sm" className="h-6 px-1.5 text-xs gap-1" onClick={handleDownload}>
+              <FileDown className="h-3 w-3" />
+              下载
+            </Button>
+            <div className="w-px h-3.5 bg-border" />
+            <Button variant="ghost" size="sm" className="h-6 px-1.5 text-xs gap-1" onClick={onClear}>
+              <Trash2 className="h-3 w-3" />
+              清空
+            </Button>
+          </div>
         </div>
 
         {/* 输出内容容器 */}
         <div className="flex-1 flex flex-col min-h-0 relative">
-          {/* 浮动工具栏 */}
-          <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-background/80 backdrop-blur-sm rounded-md border border-border/50 p-1 shadow-sm">
-            {toolbarCollapsed ? (
-              <Tooltip content="展开工具栏" position="bottom">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-primary hover:bg-primary/10"
-                  onClick={() => setToolbarCollapsed(false)}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-              </Tooltip>
-            ) : (
-              <>
-                {/* 模式切换 */}
-                <Tooltip content="树视图" position="bottom">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={`h-7 w-7 ${outputMode === "tree" ? "bg-primary/10 text-primary" : ""}`}
-                    onClick={switchToTree}
-                  >
-                    <ListTree className="h-3.5 w-3.5" />
-                  </Button>
-                </Tooltip>
-                <Tooltip content="编辑模式" position="bottom">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={`h-7 w-7 ${outputMode === "edit" ? "bg-primary/10 text-primary" : ""}`}
-                    onClick={switchToEdit}
-                  >
-                    <Code2 className="h-3.5 w-3.5" />
-                  </Button>
-                </Tooltip>
-                {/* 折叠控制 - 仅在树模式显示 */}
-                {outputMode === "tree" && parsedJson !== null && (
-                  <>
-                    <Tooltip content="全部折叠" position="bottom">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={handleFoldAll}
-                      >
-                        <ChevronsDownUp className="h-3.5 w-3.5" />
-                      </Button>
-                    </Tooltip>
-                    <Tooltip content="全部展开" position="bottom">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={handleExpandAll}
-                      >
-                        <ChevronsUpDown className="h-3.5 w-3.5" />
-                      </Button>
-                    </Tooltip>
-                  </>
-                )}
-                <div className="w-px h-4 bg-border" />
-                <Tooltip content="同步格式到输入侧" position="bottom">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={applyOutputToInput}
-                    disabled={!output.trim()}
-                  >
-                    <ArrowLeft className="h-3.5 w-3.5" />
-                  </Button>
-                </Tooltip>
-                <div className="w-px h-4 bg-border" />
-                <Tooltip content={isOutputFormatted ? "压缩为单行" : "格式化缩进"} position="bottom">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={handleFormatToggle}
-                  >
-                    {isOutputFormatted ? (
-                      <Minimize2 className="h-3.5 w-3.5" />
-                    ) : (
-                      <Braces className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                </Tooltip>
-                <div className="w-px h-4 bg-border" />
-                <Tooltip content={isEscaped ? "反转义" : "转义"} position="bottom">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={handleEscapeToggle}
-                  >
-                    {isEscaped ? (
-                      <WrapText className="h-3.5 w-3.5 rotate-180" />
-                    ) : (
-                      <WrapText className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                </Tooltip>
-                <Tooltip content="批量替换" position="bottom">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={`h-7 w-7 ${showReplace ? "bg-primary/10 text-primary" : ""}`}
-                    onClick={() => setShowReplace((v) => !v)}
-                  >
-                    <Replace className="h-3.5 w-3.5" />
-                  </Button>
-                </Tooltip>
-                <div className="w-px h-4 bg-border" />
-                <Tooltip content={copied ? "已复制" : "复制"} position="bottom">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={handleCopy}
-                  >
-                    {copied ? (
-                      <Check className="h-3.5 w-3.5 text-green-500" />
-                    ) : (
-                      <Copy className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                </Tooltip>
-                <Tooltip content="下载" position="bottom">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={handleDownload}
-                  >
-                    <FileDown className="h-3.5 w-3.5" />
-                  </Button>
-                </Tooltip>
-                <div className="w-px h-4 bg-border" />
-                <Tooltip content="清空" position="bottom">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={onClear}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </Tooltip>
-                <div className="w-px h-4 bg-border" />
-                <Tooltip content="收起工具栏" position="bottom">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-primary hover:bg-primary/10"
-                    onClick={() => setToolbarCollapsed(true)}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </Tooltip>
-              </>
-            )}
-          </div>
 
           {/* 批量替换面板 */}
           {showReplace && (
