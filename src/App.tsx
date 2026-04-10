@@ -20,9 +20,13 @@ function App() {
               <Route path="/timestamp" element={<Navigate to="/time/timestamp" replace />} />
             </Routes>
           </main>
-          <footer className="shrink-0 text-center text-xs text-muted-foreground py-1 border-t border-border/50">
+          <footer className="shrink-0 text-center text-xs text-muted-foreground py-1 border-t border-border/50 flex items-center justify-center gap-3">
             <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
               京ICP备2026015425号-1
+            </a>
+            <span className="text-border">|</span>
+            <a href="https://beian.mps.gov.cn/#/query/webSearch?code=11011402055743" target="_blank" rel="noreferrer" className="hover:text-foreground">
+              京公网安备11011402055743号
             </a>
           </footer>
         </div>
