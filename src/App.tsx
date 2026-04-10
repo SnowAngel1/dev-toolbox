@@ -25,7 +25,8 @@ function App() {
               京ICP备2026015425号-1
             </a>
             <span className="text-border">|</span>
-            <a href="https://beian.mps.gov.cn/#/query/webSearch?code=11011402055743" target="_blank" rel="noreferrer" className="hover:text-foreground">
+            <a href="https://beian.mps.gov.cn/#/query/webSearch?code=11011402055743" target="_blank" rel="noreferrer" className="hover:text-foreground inline-flex items-center gap-1">
+              <img src="/gongan.png" alt="" className="h-3.5 w-3.5" />
               京公网安备11011402055743号
             </a>
           </footer>
