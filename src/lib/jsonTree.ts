@@ -1,3 +1,6 @@
+import { isLosslessNumber } from "lossless-json"
+import { cloneJson } from "./jsonLossless"
+
 export interface JsonToken {
   type:
     | "key"
@@ -35,6 +38,8 @@ function valueTokens(value: unknown): JsonToken[] {
   if (value === null) return [makeToken("null", "null")]
   if (typeof value === "boolean") return [makeToken("boolean", String(value))]
   if (typeof value === "number") return [makeToken("number", String(value))]
+  // LosslessNumber 是对象，需优先按数字处理
+  if (isLosslessNumber(value)) return [makeToken("number", value.toString())]
   if (typeof value === "string")
     return [makeToken("string", JSON.stringify(value))]
   return []
@@ -77,7 +82,7 @@ export function flattenJsonToLines(
       ? [makeToken("key", JSON.stringify(key)), makeToken("punctuation", ": ")]
       : []
 
-    if (value === null || typeof value !== "object") {
+    if (value === null || typeof value !== "object" || isLosslessNumber(value)) {
       pushLine(indent, [...keyTokens, ...valueTokens(value), ...comma], { valuePath: path, rawValue: value })
       return
     }
@@ -141,7 +146,7 @@ export function collectAllFoldablePaths(
   path = "$"
 ): string[] {
   const paths: string[] = []
-  if (data === null || typeof data !== "object") return paths
+  if (data === null || typeof data !== "object" || isLosslessNumber(data)) return paths
 
   const isArray = Array.isArray(data)
   const entries = isArray
@@ -167,7 +172,7 @@ export function getValueAtPath(data: unknown, path: string): unknown {
 
   let current: unknown = data
   for (const seg of segments) {
-    if (current === null || typeof current !== "object") return undefined
+    if (current === null || typeof current !== "object" || isLosslessNumber(current)) return undefined
     current = (current as Record<string, unknown>)[String(seg)]
   }
   return current
@@ -204,7 +209,7 @@ export function setValueAtPath(data: unknown, path: string, newValue: unknown): 
   if (path === "$") return newValue
   const rest = path.startsWith("$.") ? path.slice(2) : path.slice(1)
   const segments = parsePathSegments(rest)
-  const cloned = JSON.parse(JSON.stringify(data))
+  const cloned = cloneJson(data)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let current: any = cloned
   for (let i = 0; i < segments.length - 1; i++) {

@@ -6,6 +6,7 @@ import { usePersistedState } from "@/hooks/usePersistedState"
 import { CodeEditor } from "@/components/CodeEditor"
 import { JSONPath } from "jsonpath-plus"
 import { Search, Copy, Trash2, BookOpen } from "lucide-react"
+import { parseJson, stringifyJson } from "@/lib/jsonLossless"
 
 const EXAMPLE_JSON = JSON.stringify(
   {
@@ -50,7 +51,7 @@ export function JsonPathTab() {
 
     let parsed: unknown
     try {
-      parsed = JSON.parse(jsonInput)
+      parsed = parseJson(jsonInput)
     } catch (e) {
       const msg = e instanceof Error ? e.message : "JSON 解析失败"
       setJsonError(msg)
@@ -61,7 +62,7 @@ export function JsonPathTab() {
     try {
       const results = JSONPath({ path: expression, json: parsed as object })
       setMatchCount(results.length)
-      setResult(JSON.stringify(results, null, 2))
+      setResult(stringifyJson(results, 2))
       toast(`查询完成，匹配 ${results.length} 条`, "success")
     } catch (e) {
       const msg = e instanceof Error ? e.message : "JSONPath 表达式错误"

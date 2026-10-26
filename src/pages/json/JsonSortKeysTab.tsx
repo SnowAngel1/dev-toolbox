@@ -5,9 +5,11 @@ import { copyToClipboard } from "@/lib/clipboard"
 import { usePersistedState } from "@/hooks/usePersistedState"
 import { CodeEditor } from "@/components/CodeEditor"
 import { Copy, FileDown, Trash2 } from "lucide-react"
+import { isLosslessNumber } from "lossless-json"
+import { parseJson, stringifyJson } from "@/lib/jsonLossless"
 
 function sortKeysRecursive(value: unknown): unknown {
-  if (value === null || typeof value !== "object") return value
+  if (value === null || typeof value !== "object" || isLosslessNumber(value)) return value
   if (Array.isArray(value)) return value.map(sortKeysRecursive)
   const sorted: Record<string, unknown> = {}
   for (const key of Object.keys(value as Record<string, unknown>).sort()) {
@@ -32,9 +34,9 @@ export function JsonSortKeysTab() {
       return
     }
     try {
-      const parsed = JSON.parse(text)
+      const parsed = parseJson(text)
       const sorted = sortKeysRecursive(parsed)
-      setOutput(JSON.stringify(sorted, null, 2))
+      setOutput(stringifyJson(sorted, 2))
       setError(undefined)
       setErrorLine(null)
     } catch (e) {

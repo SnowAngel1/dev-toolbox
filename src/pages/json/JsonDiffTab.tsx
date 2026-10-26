@@ -4,6 +4,7 @@ import { useToast } from "@/components/ui/toast"
 import { usePersistedState } from "@/hooks/usePersistedState"
 import { GitCompare, Trash2, ArrowLeftRight } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { parseJson, stringifyJson } from "@/lib/jsonLossless"
 
 interface DiffLine {
   lineNumber: number
@@ -15,7 +16,7 @@ interface DiffLine {
 /** 尝试格式化 JSON，如果不是有效 JSON 则返回原文 */
 function tryFormatJson(text: string): string {
   try {
-    return JSON.stringify(JSON.parse(text), null, 2)
+    return stringifyJson(parseJson(text), 2)
   } catch {
     return text
   }

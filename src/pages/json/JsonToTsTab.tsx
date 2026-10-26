@@ -5,6 +5,8 @@ import { copyToClipboard } from "@/lib/clipboard"
 import { usePersistedState } from "@/hooks/usePersistedState"
 import { CodeEditor } from "@/components/CodeEditor"
 import { Copy, FileDown, Trash2 } from "lucide-react"
+import { isLosslessNumber } from "lossless-json"
+import { parseJson } from "@/lib/jsonLossless"
 
 // ---- JSON → TypeScript 转换核心逻辑 ----
 
@@ -45,7 +47,7 @@ function jsonToTypeScript(data: unknown, rootName: string): string {
   function inferType(value: unknown, suggestedName: string): string {
     if (value === null) return "null"
     if (typeof value === "string") return "string"
-    if (typeof value === "number") return "number"
+    if (typeof value === "number" || isLosslessNumber(value)) return "number"
     if (typeof value === "boolean") return "boolean"
 
     if (Array.isArray(value)) {
@@ -91,6 +93,8 @@ function jsonToTypeScript(data: unknown, rootName: string): string {
     for (const item of arr) {
       if (item === null) {
         primitiveTypes.add("null")
+      } else if (isLosslessNumber(item)) {
+        primitiveTypes.add("number")
       } else if (typeof item === "object" && !Array.isArray(item)) {
         objects.push(item as Record<string, unknown>)
       } else if (Array.isArray(item)) {
@@ -191,7 +195,7 @@ export function JsonToTsTab() {
         return
       }
       try {
-        const parsed = JSON.parse(text)
+        const parsed = parseJson(text)
         const ts = jsonToTypeScript(parsed, name || "RootObject")
         setOutput(ts)
         setError(undefined)

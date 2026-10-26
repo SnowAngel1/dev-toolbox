@@ -6,6 +6,39 @@ import { usePersistedState } from "@/hooks/usePersistedState"
 import { CodeEditor } from "@/components/CodeEditor"
 import { Copy, FileDown, Trash2 } from "lucide-react"
 import yaml from "js-yaml"
+import { isLosslessNumber, isSafeNumber } from "lossless-json"
+import { parseJson } from "@/lib/jsonLossless"
+
+/** 安全数字转 number；超出 double 精度的先用占位符，dump 后回填原始字面量 */
+function toYamlValue(value: unknown, rawNumbers: string[], token: string): unknown {
+  if (isLosslessNumber(value)) {
+    const raw = value.toString()
+    if (isSafeNumber(raw)) return Number(raw)
+    rawNumbers.push(raw)
+    return `${token}${rawNumbers.length - 1}__`
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => toYamlValue(item, rawNumbers, token))
+  }
+  if (value !== null && typeof value === "object") {
+    const result: Record<string, unknown> = {}
+    for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+      result[key] = toYamlValue(item, rawNumbers, token)
+    }
+    return result
+  }
+  return value
+}
+
+function dumpYaml(value: unknown): string {
+  const rawNumbers: string[] = []
+  const token = `__dt_raw_${Math.random().toString(36).slice(2)}_`
+  let text = yaml.dump(toYamlValue(value, rawNumbers, token), { indent: 2, lineWidth: -1 })
+  rawNumbers.forEach((raw, index) => {
+    text = text.replace(`${token}${index}__`, raw)
+  })
+  return text
+}
 
 export function JsonToYamlTab() {
   const { toast } = useToast()
@@ -23,8 +56,8 @@ export function JsonToYamlTab() {
       return
     }
     try {
-      const parsed = JSON.parse(text)
-      const yamlStr = yaml.dump(parsed, { indent: 2, lineWidth: -1 })
+      const parsed = parseJson(text)
+      const yamlStr = dumpYaml(parsed)
       setOutput(yamlStr)
       setError(undefined)
       setErrorLine(null)

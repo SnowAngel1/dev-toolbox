@@ -7,6 +7,7 @@ import { JsonTreeView } from "@/components/JsonTreeView"
 import { ReplacePanel } from "@/components/ReplacePanel"
 import { useJsonSync } from "@/hooks/useJsonSync"
 import { copyToClipboard } from "@/lib/clipboard"
+import { parseJson } from "@/lib/jsonLossless"
 import { collectAllFoldablePaths, getValueAtPath, setValueAtPath } from "@/lib/jsonTree"
 import {
   Braces,
@@ -132,7 +133,7 @@ export function JsonFormatterTab() {
   const switchToTree = useCallback(() => {
     if (output.trim()) {
       try {
-        JSON.parse(output)
+        parseJson(output)
         setOutputMode("tree")
       } catch {
         toast("JSON 无效，请先修正后切换", "error")

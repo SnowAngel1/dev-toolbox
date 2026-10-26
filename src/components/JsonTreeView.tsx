@@ -1,5 +1,7 @@
 import { useMemo, useRef, useCallback, useState } from "react"
+import { isLosslessNumber } from "lossless-json"
 import { cn } from "@/lib/utils"
+import { createLosslessNumber } from "@/lib/jsonLossless"
 import { flattenJsonToLines, type JsonLine, type JsonToken } from "@/lib/jsonTree"
 
 interface JsonTreeViewProps {
@@ -35,9 +37,9 @@ function parseEditedValue(text: string): unknown {
   if (trimmed === "true") return true
   if (trimmed === "false") return false
   
-  // number（不带引号的纯数字）
-  if (/^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(trimmed)) {
-    return Number(trimmed)
+  // number（不带引号的合法 JSON 数字），保留原始字面量
+  if (/^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$/.test(trimmed)) {
+    return createLosslessNumber(trimmed)
   }
   
   // string（带引号的，去掉引号）
@@ -54,6 +56,7 @@ function getEditText(rawValue: unknown): string {
   if (rawValue === null) return "null"
   if (typeof rawValue === "boolean") return String(rawValue)
   if (typeof rawValue === "number") return String(rawValue)
+  if (isLosslessNumber(rawValue)) return rawValue.toString()
   if (typeof rawValue === "string") return `"${rawValue}"`
   return String(rawValue)
 }

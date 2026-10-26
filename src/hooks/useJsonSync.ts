@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react"
 import { useDebouncedCallback } from "./useDebounce"
 import { usePersistedState } from "./usePersistedState"
+import { parseJson, stringifyJson } from "@/lib/jsonLossless"
 
 const SYNC_DELAY = 300
 
@@ -25,8 +26,25 @@ function parseErrorLine(errorMsg: string, text: string): number | null {
   return null
 }
 
-/** 将 JSON.parse 英文错误翻译为中文 */
+/** 将 JSON 解析英文错误翻译为中文 */
 function translateJsonError(msg: string): string {
+  // lossless-json 的错误信息
+  if (/Quoted object key or end of object '\}' expected/.test(msg)) return "期望属性名称或 '}'"
+  if (/Quoted object key expected/.test(msg)) return "属性名称必须用双引号包裹"
+  if (/Colon ':' expected after property name/.test(msg)) return "属性名称后缺少 ':'"
+  if (/Comma ',' expected after value/.test(msg)) return "值后缺少 ','"
+  if (/Object value expected after ':'/.test(msg)) return "':' 后缺少 JSON 值"
+  if (/JSON value expected/.test(msg)) return "期望一个 JSON 值"
+  if (/Array item or end of array '\]' expected/.test(msg)) return "期望数组元素或 ']'"
+  if (/Array item expected/.test(msg)) return "期望数组元素"
+  if (/Expected end of input/.test(msg)) return "JSON 值之后存在多余内容"
+  if (/Invalid number/.test(msg)) return "数字格式错误"
+  if (/End of string '"' expected/.test(msg)) return "字符串未闭合（缺少引号）"
+  const invalidChar = msg.match(/Invalid character '(.+?)'/)
+  if (invalidChar) return `包含非法字符 '${invalidChar[1]}'`
+  if (/Invalid escape character/.test(msg)) return "包含非法转义字符"
+  if (/Invalid unicode character/.test(msg)) return "包含非法 Unicode 字符"
+  // JSON.parse 的错误信息
   if (/Unexpected end of JSON input/.test(msg)) return "JSON 不完整，输入意外结束"
   if (/Unexpected token/.test(msg)) {
     const m = msg.match(/Unexpected token\s+'?(.+?)'?\s*,?\s*/)
@@ -107,9 +125,9 @@ export function useJsonSync(
     initializedRef.current = true
     if (!input.trim()) return
     try {
-      const parsed = JSON.parse(input)
+      const parsed = parseJson(input)
       setParsedJson(parsed)
-      setOutput(JSON.stringify(parsed, null, 2))
+      setOutput(stringifyJson(parsed, 2))
     } catch {
       // persisted input is invalid, leave output empty
     }
@@ -126,10 +144,10 @@ export function useJsonSync(
         return
       }
       try {
-        const parsed = JSON.parse(text)
+        const parsed = parseJson(text)
         isSyncingRef.current = true
         setParsedJson(parsed)
-        setOutput(JSON.stringify(parsed, null, 2))
+        setOutput(stringifyJson(parsed, 2))
         clearError()
         requestAnimationFrame(() => {
           isSyncingRef.current = false
@@ -156,10 +174,10 @@ export function useJsonSync(
         return
       }
       try {
-        const parsed = JSON.parse(text)
+        const parsed = parseJson(text)
         isSyncingRef.current = true
         setParsedJson(parsed)
-        setInput(JSON.stringify(parsed, null, 2))
+        setInput(stringifyJson(parsed, 2))
         clearError()
         requestAnimationFrame(() => {
           isSyncingRef.current = false
@@ -205,8 +223,8 @@ export function useJsonSync(
       return
     }
     try {
-      const parsed = JSON.parse(source)
-      const formatted = JSON.stringify(parsed, null, 2)
+      const parsed = parseJson(source)
+      const formatted = stringifyJson(parsed, 2)
       setParsedJson(parsed)
       isSyncingRef.current = true
       setOutput(formatted)
@@ -232,8 +250,8 @@ export function useJsonSync(
       return
     }
     try {
-      const parsed = JSON.parse(source)
-      const compressed = JSON.stringify(parsed)
+      const parsed = parseJson(source)
+      const compressed = stringifyJson(parsed)
       setParsedJson(parsed)
       isSyncingRef.current = true
       setOutput(compressed)
@@ -320,8 +338,8 @@ export function useJsonSync(
     cancelOutputSync()
     isSyncingRef.current = true
     setParsedJson(updatedJson)
-    setOutput(JSON.stringify(updatedJson, null, 2))
-    setInput(JSON.stringify(updatedJson, null, 2))
+    setOutput(stringifyJson(updatedJson, 2))
+    setInput(stringifyJson(updatedJson, 2))
     clearError()
     requestAnimationFrame(() => { isSyncingRef.current = false })
   }, [cancelInputSync, cancelOutputSync])
@@ -337,7 +355,7 @@ export function useJsonSync(
       return
     }
     try {
-      const parsed = JSON.parse(output)
+      const parsed = parseJson(output)
       isSyncingRef.current = true
       setParsedJson(parsed)
       setInput(output)
